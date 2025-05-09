@@ -12,7 +12,7 @@ interface JournalProps {
 }
 
 // A function to generate a sample journal structure
-const generateSampleJournal = () => {
+const generateSampleJournal = (): Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[] => {
   return [
     {
       id: uuidv4(),
@@ -77,7 +77,7 @@ const generateSampleJournal = () => {
 
 const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
   const [title, setTitle] = useState(initialTitle);
-  const [bullets, setBullets] = useState<BulletItemProps[]>(generateSampleJournal());
+  const [bullets, setBullets] = useState<Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[]>(generateSampleJournal());
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<{id: string, url: string, width?: number, height?: number, top?: number, left?: number}[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -85,7 +85,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
 
   // Update a bullet's content
   const handleUpdateBullet = (id: string, content: string) => {
-    const updateBulletInTree = (items: BulletItemProps[]): BulletItemProps[] => {
+    const updateBulletInTree = (items: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[]): Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[] => {
       return items.map(item => {
         if (item.id === id) {
           return { ...item, content };
@@ -105,7 +105,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
 
   // Add a child bullet to a parent
   const handleAddChild = (parentId: string) => {
-    const addChildToParent = (items: BulletItemProps[]): BulletItemProps[] => {
+    const addChildToParent = (items: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[]): Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[] => {
       return items.map(item => {
         if (item.id === parentId) {
           const newChild = {
@@ -145,7 +145,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
   // Delete a bullet
   const handleDeleteBullet = (id: string) => {
     // Helper function to filter out bullet with given id
-    const filterBullet = (items: BulletItemProps[]): BulletItemProps[] => {
+    const filterBullet = (items: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[]): Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[] => {
       return items
         .filter(item => item.id !== id)
         .map(item => ({
@@ -161,7 +161,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
   const handleAddBulletAfter = (id: string) => {
     // Helper function to find the parent of a bullet
     const findParentId = (
-      items: BulletItemProps[],
+      items: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[],
       targetId: string,
       parentId: string | null = null
     ): string | null => {
@@ -179,11 +179,11 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
 
     // Helper function to insert a new bullet after the target
     const insertBulletAfter = (
-      items: BulletItemProps[],
+      items: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[],
       targetId: string,
       level: number
-    ): BulletItemProps[] => {
-      const result: BulletItemProps[] = [];
+    ): Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[] => {
+      const result: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[] = [];
       
       for (let i = 0; i < items.length; i++) {
         result.push(items[i]);
@@ -212,7 +212,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
 
     // Find the level of the current bullet
     const findLevel = (
-      items: BulletItemProps[],
+      items: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[],
       targetId: string
     ): number | null => {
       for (const item of items) {
@@ -232,8 +232,8 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
 
     if (parentId) {
       const updateChildrenOfParent = (
-        items: BulletItemProps[]
-      ): BulletItemProps[] => {
+        items: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[]
+      ): Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[] => {
         return items.map(item => {
           if (item.id === parentId) {
             return {
@@ -305,7 +305,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
 
   // Convert the bullets data to simplified JSON for save/export
   const exportToJson = () => {
-    const simplifyBullet = (bullet: BulletItemProps) => {
+    const simplifyBullet = (bullet: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>) => {
       return {
         id: bullet.id,
         content: bullet.content,
@@ -339,7 +339,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
   };
 
   // Map the bullets with their collapse state
-  const mapBulletsWithCollapseState = (items: BulletItemProps[]): BulletItemProps[] => {
+  const mapBulletsWithCollapseState = (items: Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[]): Omit<BulletItemProps, 'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'>[] => {
     return items.map(item => ({
       ...item,
       isCollapsed: collapsedItems.has(item.id),
