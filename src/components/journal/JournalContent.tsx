@@ -1,8 +1,7 @@
 
 import React from "react";
 import BulletItem from "@/components/BulletItem";
-import { Button } from "@/components/ui/button";
-import { Plus, IndentIncrease } from "lucide-react";
+import { BulletItemProps } from "@/components/BulletItem";
 import { BulletItemType, JournalImage } from "@/types/journal";
 
 interface JournalContentProps {
@@ -12,11 +11,8 @@ interface JournalContentProps {
   onDelete: (id: string) => void;
   onAddBulletAfter: (id: string) => void;
   onToggleCollapse: (id: string) => void;
-  onImageUpload: (id: string, file: File) => void;
-  onImageResize: (imageId: string, width: number, height?: number) => void;
-  onAddNewRootBullet: () => void;
-  onAddCollapsibleBullet: () => void;
   images: JournalImage[];
+  onImageResize?: (id: string, width: number, height?: number, top?: number, left?: number) => void;
 }
 
 const JournalContent: React.FC<JournalContentProps> = ({
@@ -26,15 +22,33 @@ const JournalContent: React.FC<JournalContentProps> = ({
   onDelete,
   onAddBulletAfter,
   onToggleCollapse,
-  onImageUpload,
-  onImageResize,
-  onAddNewRootBullet,
-  onAddCollapsibleBullet,
   images,
+  onImageResize
 }) => {
+  // Convert BulletItemType to BulletItemProps for each bullet
+  const convertToBulletItemProps = (bullet: BulletItemType): BulletItemProps => {
+    return {
+      id: bullet.id,
+      content: bullet.content,
+      children: bullet.children.map(convertToBulletItemProps),
+      level: bullet.level,
+      isCollapsed: bullet.isCollapsed,
+      onUpdate,
+      onAddChild,
+      onDelete,
+      onAddBulletAfter,
+      onToggleCollapse,
+      images,
+      onImageResize
+    };
+  };
+
+  // Convert all bullets
+  const bulletProps = bullets.map(convertToBulletItemProps);
+
   return (
-    <>
-      {bullets.map((bullet) => (
+    <div className="journal-content p-4 flex-1 overflow-y-auto">
+      {bulletProps.map((bullet) => (
         <BulletItem
           key={bullet.id}
           id={bullet.id}
@@ -47,33 +61,11 @@ const JournalContent: React.FC<JournalContentProps> = ({
           onDelete={onDelete}
           onAddBulletAfter={onAddBulletAfter}
           onToggleCollapse={onToggleCollapse}
-          onImageUpload={onImageUpload}
-          onImageResize={onImageResize}
           images={images}
+          onImageResize={onImageResize}
         />
       ))}
-      <div className="flex space-x-2 mt-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-gray-500 hover:text-gray-700"
-          onClick={onAddNewRootBullet}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add new item
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-gray-500 hover:text-gray-700"
-          onClick={onAddCollapsibleBullet}
-        >
-          <IndentIncrease className="h-4 w-4 mr-1" />
-          Add collapsible section
-        </Button>
-      </div>
-    </>
+    </div>
   );
 };
 
