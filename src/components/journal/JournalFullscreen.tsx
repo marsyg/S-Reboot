@@ -15,6 +15,7 @@ interface JournalFullscreenProps {
   onAddBulletAfter: (id: string) => void;
   onToggleCollapse: (id: string) => void;
   onImageUpload: (id: string, file: File) => void;
+  onImageResize: (imageId: string, width: number, height?: number) => void;
   onAddNewRootBullet: () => void;
   onAddCollapsibleBullet: () => void;
   images: JournalImage[];
@@ -32,6 +33,7 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
   onAddBulletAfter,
   onToggleCollapse,
   onImageUpload,
+  onImageResize,
   onAddNewRootBullet,
   onAddCollapsibleBullet,
   images,
@@ -61,6 +63,7 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
             onAddBulletAfter={onAddBulletAfter}
             onToggleCollapse={onToggleCollapse}
             onImageUpload={onImageUpload}
+            onImageResize={onImageResize}
             onAddNewRootBullet={onAddNewRootBullet}
             onAddCollapsibleBullet={onAddCollapsibleBullet}
             images={images}

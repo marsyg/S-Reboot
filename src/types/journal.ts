@@ -13,10 +13,11 @@ export type BulletItemType = {
 export interface JournalImage {
   id: string;
   url: string;
-  width?: number;
+  width: number;
   height?: number;
   top?: number;
   left?: number;
+  isResizing?: boolean;
 }
 
 export interface JournalProps {

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ChevronDown, ChevronRight, Image, Bold, Italic, Underline } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ContentEditable from "react-contenteditable";
+import { JournalImage } from "@/types/journal";
 
 export interface BulletItemProps {
   id: string;
@@ -17,7 +18,8 @@ export interface BulletItemProps {
   onToggleCollapse: (id: string) => void;
   isCollapsed: boolean;
   onImageUpload: (id: string, file: File) => void;
-  images: {id: string, url: string, width?: number, height?: number, top?: number, left?: number}[];
+  images: JournalImage[];
+  onImageResize?: (imageId: string, width: number, height?: number) => void;
 }
 
 const BulletItem: React.FC<BulletItemProps> = ({
@@ -32,12 +34,18 @@ const BulletItem: React.FC<BulletItemProps> = ({
   onToggleCollapse,
   isCollapsed,
   onImageUpload,
-  images
+  images,
+  onImageResize
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const contentRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Image resize related state
+  const [resizingImage, setResizingImage] = useState<string | null>(null);
+  const [initialMousePos, setInitialMousePos] = useState({ x: 0, y: 0 });
+  const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
   
   const handleChange = (e: React.FormEvent<HTMLElement>) => {
     onUpdate(id, e.currentTarget.innerHTML);
@@ -100,6 +108,47 @@ const BulletItem: React.FC<BulletItemProps> = ({
   const toggleUnderline = () => {
     document.execCommand('underline', false);
   };
+
+  // Image resize handlers
+  const startResizing = (imageId: string, e: React.MouseEvent, width: number, height?: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingImage(imageId);
+    setInitialMousePos({ x: e.clientX, y: e.clientY });
+    setInitialSize({ width, height: height || width });
+    
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', stopResizing);
+  };
+  
+  const handleResizeMove = (e: MouseEvent) => {
+    if (resizingImage && onImageResize) {
+      e.preventDefault();
+      
+      // Calculate new dimensions based on mouse movement
+      const deltaX = e.clientX - initialMousePos.x;
+      const newWidth = Math.max(50, initialSize.width + deltaX);
+      
+      // Optional: maintain aspect ratio
+      // const aspectRatio = initialSize.height / initialSize.width;
+      // const newHeight = newWidth * aspectRatio;
+      
+      onImageResize(resizingImage, newWidth);
+    }
+  };
+  
+  const stopResizing = () => {
+    setResizingImage(null);
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', stopResizing);
+  };
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', stopResizing);
+    };
+  }, [resizingImage]);
 
   return (
     <div className="bullet-item relative animate-fade-in">
@@ -174,10 +223,13 @@ const BulletItem: React.FC<BulletItemProps> = ({
           <div className="ml-2 mt-1 flex flex-wrap gap-2">
             {images
               .filter(img => img.id.startsWith(id + "-"))
-              .map((img, index) => (
+              .map((img) => (
                 <div 
                   key={img.id} 
-                  className="relative group inline-block"
+                  className={cn(
+                    "relative group inline-block",
+                    resizingImage === img.id && "ring-2 ring-blue-500"
+                  )}
                   style={{
                     width: img.width || 200,
                     height: img.height || 'auto',
@@ -196,7 +248,15 @@ const BulletItem: React.FC<BulletItemProps> = ({
                     }}
                   />
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black bg-opacity-20 transition-opacity flex items-center justify-center">
-                    {/* Image controls could be added here */}
+                    {/* Resize handle */}
+                    <div 
+                      className="absolute bottom-0 right-0 w-5 h-5 bg-white border border-gray-300 rounded-tl cursor-se-resize flex items-center justify-center"
+                      onMouseDown={(e) => startResizing(img.id, e, img.width, img.height)}
+                    >
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 7L1 1M7 1L1 7" stroke="#666" strokeWidth="1.5" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -216,6 +276,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
                   onToggleCollapse={onToggleCollapse}
                   onImageUpload={onImageUpload}
                   images={images}
+                  onImageResize={onImageResize}
                 />
               ))}
             </div>

@@ -222,6 +222,17 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     });
   };
 
+  // Handle image resizing
+  const handleImageResize = (imageId: string, width: number, height?: number) => {
+    setImages(prevImages => 
+      prevImages.map(img => 
+        img.id === imageId 
+          ? { ...img, width, height } 
+          : img
+      )
+    );
+  };
+
   // Add a new root-level bullet
   const addNewRootBullet = () => {
     const newBullet: BulletItemType = {
@@ -322,6 +333,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     handleAddBulletAfter,
     handleToggleCollapse,
     handleImageUpload,
+    handleImageResize,
     addNewRootBullet,
     addCollapsibleBullet,
     exportToJson

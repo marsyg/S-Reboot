@@ -20,6 +20,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
     handleAddBulletAfter,
     handleToggleCollapse,
     handleImageUpload,
+    handleImageResize,
     addNewRootBullet,
     addCollapsibleBullet,
     exportToJson
@@ -39,6 +40,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
           onAddBulletAfter={handleAddBulletAfter}
           onToggleCollapse={handleToggleCollapse}
           onImageUpload={handleImageUpload}
+          onImageResize={handleImageResize}
           onAddNewRootBullet={addNewRootBullet}
           onAddCollapsibleBullet={addCollapsibleBullet}
           images={images}
@@ -58,6 +60,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
           onAddBulletAfter={handleAddBulletAfter}
           onToggleCollapse={handleToggleCollapse}
           onImageUpload={handleImageUpload}
+          onImageResize={handleImageResize}
           onAddNewRootBullet={addNewRootBullet}
           onAddCollapsibleBullet={addCollapsibleBullet}
           images={images}
