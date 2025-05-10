@@ -18,6 +18,7 @@ interface JournalCardProps {
   onToggleCollapse: (id: string) => void;
   onImageUpload: (id: string, file: File) => void;
   onAddNewRootBullet: () => void;
+  onAddCollapsibleBullet: () => void;
   images: JournalImage[];
   setIsFullscreen: (isFullscreen: boolean) => void;
 }
@@ -33,6 +34,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
   onToggleCollapse,
   onImageUpload,
   onAddNewRootBullet,
+  onAddCollapsibleBullet,
   images,
   setIsFullscreen,
 }) => {
@@ -58,6 +60,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
             onToggleCollapse={onToggleCollapse}
             onImageUpload={onImageUpload}
             onAddNewRootBullet={onAddNewRootBullet}
+            onAddCollapsibleBullet={onAddCollapsibleBullet}
             images={images}
           />
         </div>

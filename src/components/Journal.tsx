@@ -21,6 +21,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
     handleToggleCollapse,
     handleImageUpload,
     addNewRootBullet,
+    addCollapsibleBullet,
     exportToJson
   } = useJournalState(initialTitle);
 
@@ -39,6 +40,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
           onToggleCollapse={handleToggleCollapse}
           onImageUpload={handleImageUpload}
           onAddNewRootBullet={addNewRootBullet}
+          onAddCollapsibleBullet={addCollapsibleBullet}
           images={images}
           setIsFullscreen={setIsFullscreen}
         />
@@ -57,6 +59,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
           onToggleCollapse={handleToggleCollapse}
           onImageUpload={handleImageUpload}
           onAddNewRootBullet={addNewRootBullet}
+          onAddCollapsibleBullet={addCollapsibleBullet}
           images={images}
           setIsFullscreen={setIsFullscreen}
           onExport={exportToJson}

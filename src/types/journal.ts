@@ -2,11 +2,12 @@
 import { BulletItemProps } from "@/components/BulletItem";
 
 // A type representing just the data structure of a bullet item without the handler functions
-export type BulletItemType = Omit<
-  BulletItemProps, 
-  'onUpdate' | 'onAddChild' | 'onDelete' | 'onAddBulletAfter' | 'onToggleCollapse' | 'onImageUpload' | 'images'
-> & {
+export type BulletItemType = {
+  id: string;
+  content: string;
   children: BulletItemType[];
+  level: number;
+  isCollapsed: boolean;
 };
 
 export interface JournalImage {

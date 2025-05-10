@@ -2,6 +2,7 @@
 import React from "react";
 import BulletItem from "@/components/BulletItem";
 import { Button } from "@/components/ui/button";
+import { Plus, IndentIncrease } from "lucide-react";
 import { BulletItemType, JournalImage } from "@/types/journal";
 
 interface JournalContentProps {
@@ -13,6 +14,7 @@ interface JournalContentProps {
   onToggleCollapse: (id: string) => void;
   onImageUpload: (id: string, file: File) => void;
   onAddNewRootBullet: () => void;
+  onAddCollapsibleBullet: () => void;
   images: JournalImage[];
 }
 
@@ -25,6 +27,7 @@ const JournalContent: React.FC<JournalContentProps> = ({
   onToggleCollapse,
   onImageUpload,
   onAddNewRootBullet,
+  onAddCollapsibleBullet,
   images,
 }) => {
   return (
@@ -32,7 +35,11 @@ const JournalContent: React.FC<JournalContentProps> = ({
       {bullets.map((bullet) => (
         <BulletItem
           key={bullet.id}
-          {...bullet}
+          id={bullet.id}
+          content={bullet.content}
+          children={bullet.children}
+          level={bullet.level}
+          isCollapsed={bullet.isCollapsed}
           onUpdate={onUpdate}
           onAddChild={onAddChild}
           onDelete={onDelete}
@@ -42,14 +49,27 @@ const JournalContent: React.FC<JournalContentProps> = ({
           images={images}
         />
       ))}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mt-2 text-gray-500 hover:text-gray-700"
-        onClick={onAddNewRootBullet}
-      >
-        + Add new item
-      </Button>
+      <div className="flex space-x-2 mt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-gray-500 hover:text-gray-700"
+          onClick={onAddNewRootBullet}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add new item
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-gray-500 hover:text-gray-700"
+          onClick={onAddCollapsibleBullet}
+        >
+          <IndentIncrease className="h-4 w-4 mr-1" />
+          Add collapsible section
+        </Button>
+      </div>
     </>
   );
 };

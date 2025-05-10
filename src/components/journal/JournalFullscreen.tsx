@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DialogContent, DialogHeader } from "@/components/ui/dialog";
+import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import JournalContent from "./JournalContent";
 import JournalToolbar from "./JournalToolbar";
 import { BulletItemType, JournalImage } from "@/types/journal";
@@ -16,6 +16,7 @@ interface JournalFullscreenProps {
   onToggleCollapse: (id: string) => void;
   onImageUpload: (id: string, file: File) => void;
   onAddNewRootBullet: () => void;
+  onAddCollapsibleBullet: () => void;
   images: JournalImage[];
   setIsFullscreen: (isFullscreen: boolean) => void;
   onExport: () => void;
@@ -32,6 +33,7 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
   onToggleCollapse,
   onImageUpload,
   onAddNewRootBullet,
+  onAddCollapsibleBullet,
   images,
   setIsFullscreen,
   onExport,
@@ -39,6 +41,7 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
   return (
     <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0">
       <DialogHeader className="p-4 border-b">
+        <DialogTitle className="sr-only">Journal Editor</DialogTitle>
         <JournalToolbar
           title={title}
           setTitle={setTitle}
@@ -59,6 +62,7 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
             onToggleCollapse={onToggleCollapse}
             onImageUpload={onImageUpload}
             onAddNewRootBullet={onAddNewRootBullet}
+            onAddCollapsibleBullet={onAddCollapsibleBullet}
             images={images}
           />
         </div>

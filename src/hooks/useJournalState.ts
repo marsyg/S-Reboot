@@ -38,7 +38,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     const addChildToParent = (items: BulletItemType[]): BulletItemType[] => {
       return items.map(item => {
         if (item.id === parentId) {
-          const newChild = {
+          const newChild: BulletItemType = {
             id: uuidv4(),
             content: "",
             children: [],
@@ -120,13 +120,14 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
         
         if (items[i].id === targetId) {
           // Insert new bullet after this one
-          result.push({
+          const newBullet: BulletItemType = {
             id: uuidv4(),
             content: "",
             children: [],
             level,
             isCollapsed: false,
-          });
+          };
+          result.push(newBullet);
         }
         
         if (items[i].children.length > 0) {
@@ -223,7 +224,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
 
   // Add a new root-level bullet
   const addNewRootBullet = () => {
-    const newBullet = {
+    const newBullet: BulletItemType = {
       id: uuidv4(),
       content: "",
       children: [],
@@ -231,6 +232,35 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
       isCollapsed: false,
     };
     setBullets([...bullets, newBullet]);
+  };
+
+  // Add a new collapsible section with a nested bullet
+  const addCollapsibleBullet = () => {
+    const parentId = uuidv4();
+    const childId = uuidv4();
+    
+    const newParent: BulletItemType = {
+      id: parentId,
+      content: "New section",
+      level: 0,
+      isCollapsed: false,
+      children: [
+        {
+          id: childId,
+          content: "",
+          level: 1,
+          isCollapsed: false,
+          children: [],
+        }
+      ]
+    };
+    
+    setBullets([...bullets, newParent]);
+    
+    toast({
+      title: "Collapsible section created",
+      description: "You can now add content to your new section.",
+    });
   };
 
   // Convert the bullets data to simplified JSON for save/export
@@ -293,6 +323,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     handleToggleCollapse,
     handleImageUpload,
     addNewRootBullet,
+    addCollapsibleBullet,
     exportToJson
   };
 };
