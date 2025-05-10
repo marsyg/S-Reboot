@@ -12,7 +12,10 @@ interface JournalContentProps {
   onAddBulletAfter: (id: string) => void;
   onToggleCollapse: (id: string) => void;
   images: JournalImage[];
+  onImageUpload: (id: string, file: File) => void;
   onImageResize?: (id: string, width: number, height?: number, top?: number, left?: number) => void;
+  onAddNewRootBullet?: () => void;
+  onAddCollapsibleBullet?: () => void;
 }
 
 const JournalContent: React.FC<JournalContentProps> = ({
@@ -23,6 +26,7 @@ const JournalContent: React.FC<JournalContentProps> = ({
   onAddBulletAfter,
   onToggleCollapse,
   images,
+  onImageUpload,
   onImageResize
 }) => {
   // Convert BulletItemType to BulletItemProps for each bullet
@@ -38,6 +42,7 @@ const JournalContent: React.FC<JournalContentProps> = ({
       onDelete,
       onAddBulletAfter,
       onToggleCollapse,
+      onImageUpload,
       images,
       onImageResize
     };
@@ -61,6 +66,7 @@ const JournalContent: React.FC<JournalContentProps> = ({
           onDelete={onDelete}
           onAddBulletAfter={onAddBulletAfter}
           onToggleCollapse={onToggleCollapse}
+          onImageUpload={onImageUpload}
           images={images}
           onImageResize={onImageResize}
         />
