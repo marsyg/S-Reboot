@@ -1,11 +1,18 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface JournalToolbarProps {
   title: string;
   setTitle: (title: string) => void;
   onExport: () => void;
+  onExportOPML: () => void;
   onClose: () => void;
   isFullscreen: boolean;
 }
@@ -14,6 +21,7 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
   title,
   setTitle,
   onExport,
+  onExportOPML,
   onClose,
   isFullscreen,
 }) => {
@@ -32,9 +40,21 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
       </div>
       <div className="flex gap-2">
         {isFullscreen && (
-          <Button variant="outline" size="sm" onClick={onExport}>
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onExport}>
+                Export as JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onExportOPML}>
+                Export as OPML
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         <Button variant="outline" size="sm" onClick={onClose}>
           {isFullscreen ? "Close" : "Open Full Editor"}

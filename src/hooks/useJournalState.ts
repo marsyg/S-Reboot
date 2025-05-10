@@ -309,6 +309,63 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     });
   };
 
+  // Export to OPML format
+  const exportToOPML = () => {
+    // Create OPML content
+    const buildOutline = (bullet: BulletItemType): string => {
+      let outlineContent = `<outline text="${escapeXml(bullet.content)}"`;
+      
+      if (bullet.children.length > 0) {
+        outlineContent += `>\n`;
+        bullet.children.forEach(child => {
+          outlineContent += buildOutline(child);
+        });
+        outlineContent += `</outline>\n`;
+      } else {
+        outlineContent += `/>\n`;
+      }
+      
+      return outlineContent;
+    };
+
+    // Escape special XML characters
+    const escapeXml = (unsafe: string): string => {
+      return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    // Build the complete OPML document
+    const opmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>${escapeXml(title)}</title>
+    <dateCreated>${new Date().toISOString()}</dateCreated>
+  </head>
+  <body>
+${bullets.map(buildOutline).join('')}
+  </body>
+</opml>`;
+
+    // Create and trigger download
+    const dataUri = `data:text/xml;charset=utf-8,${encodeURIComponent(opmlContent)}`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', `${title.replace(/\s+/g, '-').toLowerCase()}.opml`);
+    document.body.appendChild(linkElement);
+    linkElement.click();
+    document.body.removeChild(linkElement);
+
+    toast({
+      title: "Journal exported",
+      description: "Your journal has been exported as OPML.",
+    });
+  };
+
   // Map the bullets with their collapse state
   const mapBulletsWithCollapseState = (items: BulletItemType[]): BulletItemType[] => {
     return items.map(item => ({
@@ -336,6 +393,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     handleImageResize,
     addNewRootBullet,
     addCollapsibleBullet,
-    exportToJson
+    exportToJson,
+    exportToOPML
   };
 };

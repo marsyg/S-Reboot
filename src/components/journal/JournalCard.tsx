@@ -22,6 +22,8 @@ interface JournalCardProps {
   onAddCollapsibleBullet: () => void;
   images: JournalImage[];
   setIsFullscreen: (isFullscreen: boolean) => void;
+  onExport: () => void;
+  onExportOPML: () => void;
 }
 
 const JournalCard: React.FC<JournalCardProps> = ({
@@ -39,6 +41,8 @@ const JournalCard: React.FC<JournalCardProps> = ({
   onAddCollapsibleBullet,
   images,
   setIsFullscreen,
+  onExport,
+  onExportOPML,
 }) => {
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-md animate-fade-in">
@@ -46,7 +50,8 @@ const JournalCard: React.FC<JournalCardProps> = ({
         <JournalToolbar
           title={title}
           setTitle={setTitle}
-          onExport={() => {}}
+          onExport={onExport}
+          onExportOPML={onExportOPML}
           onClose={() => setIsFullscreen(true)}
           isFullscreen={false}
         />

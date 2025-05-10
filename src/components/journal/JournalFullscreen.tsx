@@ -21,6 +21,7 @@ interface JournalFullscreenProps {
   images: JournalImage[];
   setIsFullscreen: (isFullscreen: boolean) => void;
   onExport: () => void;
+  onExportOPML: () => void;
 }
 
 const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
@@ -39,6 +40,7 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
   images,
   setIsFullscreen,
   onExport,
+  onExportOPML,
 }) => {
   return (
     <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0">
@@ -48,6 +50,7 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
           title={title}
           setTitle={setTitle}
           onExport={onExport}
+          onExportOPML={onExportOPML}
           onClose={() => setIsFullscreen(false)}
           isFullscreen={true}
         />
