@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -60,7 +59,7 @@ const Landing = () => {
           <div className="relative z-10 text-center">
             <div className="w-32 h-32 rounded-full overflow-hidden mx-auto mb-4 bg-white">
               <img 
-                src="/lovable-uploads/6165ef71-9e7d-497d-97ad-6b38061c30ca.png" 
+                src="/placeholder.svg" 
                 alt="Profile" 
                 className="w-full h-full object-cover"
               />
