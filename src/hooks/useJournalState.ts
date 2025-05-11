@@ -251,32 +251,72 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     setBullets([...bullets, newBullet]);
   };
 
-  // Add a new collapsible section with a nested bullet - enhanced for multilevel nesting
-  const addCollapsibleBullet = () => {
-    const parentId = uuidv4();
+  // Modified: Add a collapsible section where appropriate, not always at root level
+  const addCollapsibleBullet = (parentId?: string) => {
+    const newParentId = uuidv4();
     const childId = uuidv4();
     
     const newParent: BulletItemType = {
-      id: parentId,
+      id: newParentId,
       content: "New section",
-      level: 0,
+      level: 0, // This will be adjusted based on context
       isCollapsed: false,
       children: [
         {
           id: childId,
           content: "",
-          level: 1,
+          level: 1, // This will be adjusted based on context
           isCollapsed: false,
           children: [],
         }
       ]
     };
     
-    setBullets([...bullets, newParent]);
+    // If no parentId specified, add at root level
+    if (!parentId) {
+      setBullets([...bullets, newParent]);
+    } else {
+      // Helper function to find and add inside a specific parent
+      const addCollapsibleToParent = (items: BulletItemType[], targetId: string): BulletItemType[] => {
+        return items.map(item => {
+          if (item.id === targetId) {
+            // Found our parent, add the new section as a child
+            const updatedLevel = item.level + 1;
+            newParent.level = updatedLevel;
+            newParent.children[0].level = updatedLevel + 1;
+            
+            return {
+              ...item,
+              children: [...item.children, newParent],
+              isCollapsed: false // Ensure parent is expanded
+            };
+          }
+          
+          if (item.children.length > 0) {
+            return {
+              ...item,
+              children: addCollapsibleToParent(item.children, targetId)
+            };
+          }
+          
+          return item;
+        });
+      };
+
+      setBullets(addCollapsibleToParent(bullets, parentId));
+      
+      // Ensure the parent is not collapsed
+      setCollapsedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(parentId);
+        return newSet;
+      });
+    }
     
     toast({
       title: "Collapsible section created",
       description: "You can now add content to your new section.",
+      duration: 2000,
     });
   };
 

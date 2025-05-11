@@ -17,7 +17,7 @@ interface JournalContentProps {
   onImageUpload: (id: string, file: File) => void;
   onImageResize?: (id: string, width: number, height?: number, top?: number, left?: number) => void;
   onAddNewRootBullet?: () => void;
-  onAddCollapsibleBullet?: () => void;
+  onAddCollapsibleBullet?: (parentId?: string) => void;
 }
 
 const JournalContent: React.FC<JournalContentProps> = ({
@@ -48,7 +48,8 @@ const JournalContent: React.FC<JournalContentProps> = ({
       onToggleCollapse,
       onImageUpload,
       images,
-      onImageResize
+      onImageResize,
+      onAddCollapsibleBullet
     };
   };
 
@@ -60,19 +61,7 @@ const JournalContent: React.FC<JournalContentProps> = ({
       {bulletProps.map((bullet) => (
         <BulletItem
           key={bullet.id}
-          id={bullet.id}
-          content={bullet.content}
-          children={bullet.children}
-          level={bullet.level}
-          isCollapsed={bullet.isCollapsed}
-          onUpdate={onUpdate}
-          onAddChild={onAddChild}
-          onDelete={onDelete}
-          onAddBulletAfter={onAddBulletAfter}
-          onToggleCollapse={onToggleCollapse}
-          onImageUpload={onImageUpload}
-          images={images}
-          onImageResize={onImageResize}
+          {...bullet}
         />
       ))}
       
@@ -97,7 +86,7 @@ const JournalContent: React.FC<JournalContentProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={onAddCollapsibleBullet}
+            onClick={() => onAddCollapsibleBullet()}
             className="flex items-center gap-1 hover:scale-105 transition-transform"
           >
             <ListTree className="h-4 w-4" />

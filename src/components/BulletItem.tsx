@@ -21,6 +21,7 @@ export interface BulletItemProps {
   onImageUpload: (id: string, file: File) => void;
   images: JournalImage[];
   onImageResize?: (imageId: string, width: number, height?: number) => void;
+  onAddCollapsibleBullet?: (parentId: string) => void;
 }
 
 const BulletItem: React.FC<BulletItemProps> = ({
@@ -36,7 +37,8 @@ const BulletItem: React.FC<BulletItemProps> = ({
   isCollapsed,
   onImageUpload,
   images,
-  onImageResize
+  onImageResize,
+  onAddCollapsibleBullet
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
@@ -101,8 +103,9 @@ const BulletItem: React.FC<BulletItemProps> = ({
   };
 
   const handleAddCollapsibleSection = () => {
-    // First create a child bullet
-    onAddChild(id);
+    if (onAddCollapsibleBullet) {
+      onAddCollapsibleBullet(id);
+    }
   };
 
   const toggleBold = () => {
@@ -234,7 +237,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
             />
 
             {/* Add collapsible section button - appears on hover */}
-            {showControls && (
+            {showControls && onAddCollapsibleBullet && (
               <div 
                 className="absolute -right-8 top-0 flex gap-1.5 animate-fade-in"
               >
@@ -249,7 +252,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">
-                    <p className="text-xs">Add collapsible section</p>
+                    <p className="text-xs">Add nested section</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -319,6 +322,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
                     onImageUpload={onImageUpload}
                     images={images}
                     onImageResize={onImageResize}
+                    onAddCollapsibleBullet={onAddCollapsibleBullet}
                   />
                 ))}
               </CollapsibleContent>
