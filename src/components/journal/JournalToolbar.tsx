@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { List, ListTree } from "lucide-react";
 
 interface JournalToolbarProps {
   title: string;
@@ -15,6 +16,8 @@ interface JournalToolbarProps {
   onExportOPML: () => void;
   onClose: () => void;
   isFullscreen: boolean;
+  onAddNewRootBullet?: () => void;
+  onAddCollapsibleBullet?: () => void;
 }
 
 const JournalToolbar: React.FC<JournalToolbarProps> = ({
@@ -24,6 +27,8 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
   onExportOPML,
   onClose,
   isFullscreen,
+  onAddNewRootBullet,
+  onAddCollapsibleBullet,
 }) => {
   return (
     <div className="flex justify-between items-center">
@@ -34,29 +39,57 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
           onChange={(e) => setTitle(e.target.value)}
           className={`bg-transparent focus:outline-none border-b border-transparent focus:border-gray-300 p-1 ${
             isFullscreen ? "text-2xl" : "text-xl"
-          } font-semibold`}
+          } font-semibold animate-fade-in`}
           placeholder="Journal Title"
         />
       </div>
-      <div className="flex gap-2">
-        {isFullscreen && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onExport}>
-                Export as JSON
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onExportOPML}>
-                Export as OPML
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <div className="flex gap-2 items-center">
+        {onAddNewRootBullet && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAddNewRootBullet}
+            className="flex items-center gap-1 hover:scale-105 transition-transform"
+          >
+            <List className="h-4 w-4" />
+            <span>Add Bullet</span>
+          </Button>
         )}
-        <Button variant="outline" size="sm" onClick={onClose}>
+        
+        {onAddCollapsibleBullet && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAddCollapsibleBullet}
+            className="flex items-center gap-1 hover:scale-105 transition-transform"
+          >
+            <ListTree className="h-4 w-4" />
+            <span>Add Section</span>
+          </Button>
+        )}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="hover:scale-105 transition-transform">
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="animate-fade-in">
+            <DropdownMenuItem onClick={onExport} className="hover:bg-gray-100">
+              Export as JSON
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExportOPML} className="hover:bg-gray-100">
+              Export as OPML
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onClose}
+          className="hover:scale-105 transition-transform"
+        >
           {isFullscreen ? "Close" : "Open Full Editor"}
         </Button>
       </div>

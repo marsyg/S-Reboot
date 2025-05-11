@@ -43,7 +43,7 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
   onExportOPML,
 }) => {
   return (
-    <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0">
+    <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0 animate-fade-in">
       <DialogHeader className="p-4 border-b">
         <DialogTitle className="sr-only">Journal Editor</DialogTitle>
         <JournalToolbar
@@ -53,6 +53,8 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
           onExportOPML={onExportOPML}
           onClose={() => setIsFullscreen(false)}
           isFullscreen={true}
+          onAddNewRootBullet={onAddNewRootBullet}
+          onAddCollapsibleBullet={onAddCollapsibleBullet}
         />
       </DialogHeader>
       

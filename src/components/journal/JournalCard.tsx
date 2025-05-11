@@ -45,7 +45,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
   onExportOPML,
 }) => {
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-md animate-fade-in">
+    <Card className="w-full max-w-4xl mx-auto shadow-md animate-fade-in hover:shadow-lg transition-all duration-300">
       <CardHeader className="bg-gray-50 rounded-t-lg">
         <JournalToolbar
           title={title}
@@ -54,10 +54,12 @@ const JournalCard: React.FC<JournalCardProps> = ({
           onExportOPML={onExportOPML}
           onClose={() => setIsFullscreen(true)}
           isFullscreen={false}
+          onAddNewRootBullet={onAddNewRootBullet}
+          onAddCollapsibleBullet={onAddCollapsibleBullet}
         />
       </CardHeader>
       <CardContent className="pt-4">
-        <div className="journal-content min-h-[300px] p-4 bg-journal-background rounded">
+        <div className="journal-content min-h-[300px] p-4 bg-journal-background rounded shadow-inner">
           <JournalContent
             bullets={bullets}
             onUpdate={onUpdate}
