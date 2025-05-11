@@ -4,6 +4,10 @@ import { BulletItemType } from "@/types/journal";
 
 // Generate sample journal entries for testing
 export const generateSampleJournal = (): BulletItemType[] => {
+  const childId1 = uuidv4();
+  const childId2 = uuidv4();
+  const nestedChildId1 = uuidv4();
+  
   return [
     {
       id: uuidv4(),
@@ -14,15 +18,30 @@ export const generateSampleJournal = (): BulletItemType[] => {
     },
     {
       id: uuidv4(),
-      content: "Add content with formatting",
+      content: "Multilevel sections example",
       children: [
         {
-          id: uuidv4(),
-          content: "Press Tab to nest a bullet",
-          children: [] as BulletItemType[],
+          id: childId1,
+          content: "First level nested item",
+          children: [
+            {
+              id: nestedChildId1,
+              content: "Second level nested item",
+              children: [] as BulletItemType[],
+              level: 2,
+              isCollapsed: false,
+            }
+          ],
           level: 1,
           isCollapsed: false,
         },
+        {
+          id: childId2,
+          content: "Another nested item",
+          children: [] as BulletItemType[],
+          level: 1,
+          isCollapsed: false,
+        }
       ],
       level: 0,
       isCollapsed: false,

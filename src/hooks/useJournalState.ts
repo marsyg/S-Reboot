@@ -32,7 +32,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     setBullets(updateBulletInTree(bullets));
   };
 
-  // Add a child bullet to a parent
+  // Add a child bullet to a parent - now supports multilevel nesting
   const handleAddChild = (parentId: string) => {
     const addChildToParent = (items: BulletItemType[]): BulletItemType[] => {
       return items.map(item => {
@@ -72,7 +72,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     
     // Show a toast when adding a nested section
     toast({
-      title: "Added new item",
+      title: "Added new nested item",
       description: "New nested item has been added.",
       duration: 2000,
     });
@@ -192,7 +192,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     }
   };
 
-  // Toggle collapse state of a bullet
+  // Toggle collapse state of a bullet - enhanced for multilevel nesting
   const handleToggleCollapse = (id: string) => {
     setCollapsedItems(prev => {
       const newSet = new Set(prev);
@@ -251,7 +251,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     setBullets([...bullets, newBullet]);
   };
 
-  // Add a new collapsible section with a nested bullet
+  // Add a new collapsible section with a nested bullet - enhanced for multilevel nesting
   const addCollapsibleBullet = () => {
     const parentId = uuidv4();
     const childId = uuidv4();

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import ContentEditable from "react-contenteditable";
 import { JournalImage } from "@/types/journal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 export interface BulletItemProps {
   id: string;
@@ -102,9 +103,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
   const handleAddCollapsibleSection = () => {
     // First create a child bullet
     onAddChild(id);
-    
-    // Set the new child to be a section (this is handled in the parent component)
-    // The parent already has the logic to make the child a section
   };
 
   const toggleBold = () => {
@@ -238,7 +236,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
             {/* Add collapsible section button - appears on hover */}
             {showControls && (
               <div 
-                className="absolute -right-8 top-0 animate-fade-in"
+                className="absolute -right-8 top-0 flex gap-1.5 animate-fade-in"
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -301,24 +299,30 @@ const BulletItem: React.FC<BulletItemProps> = ({
               ))}
           </div>
           
-          {!isCollapsed && children.length > 0 && (
-            <div className="ml-5 border-l border-gray-200 pl-2 animate-accordion-down">
-              {children.map((child) => (
-                <BulletItem
-                  key={child.id}
-                  {...child}
-                  level={level + 1}
-                  onUpdate={onUpdate}
-                  onAddChild={onAddChild}
-                  onDelete={onDelete}
-                  onAddBulletAfter={onAddBulletAfter}
-                  onToggleCollapse={onToggleCollapse}
-                  onImageUpload={onImageUpload}
-                  images={images}
-                  onImageResize={onImageResize}
-                />
-              ))}
-            </div>
+          {/* Improved nested collapsible sections with better animations */}
+          {children.length > 0 && (
+            <Collapsible
+              open={!isCollapsed}
+              className="ml-5 mt-1 animate-fade-in"
+            >
+              <CollapsibleContent className="border-l border-gray-200 pl-2 animate-accordion-down">
+                {children.map((child) => (
+                  <BulletItem
+                    key={child.id}
+                    {...child}
+                    level={level + 1}
+                    onUpdate={onUpdate}
+                    onAddChild={onAddChild}
+                    onDelete={onDelete}
+                    onAddBulletAfter={onAddBulletAfter}
+                    onToggleCollapse={onToggleCollapse}
+                    onImageUpload={onImageUpload}
+                    images={images}
+                    onImageResize={onImageResize}
+                  />
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       </div>
