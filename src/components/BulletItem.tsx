@@ -1,10 +1,10 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { ChevronDown, ChevronRight, Image, Bold, Italic, Underline } from "lucide-react";
+import { ChevronDown, ChevronRight, Image, Bold, Italic, Underline, ListTree } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ContentEditable from "react-contenteditable";
 import { JournalImage } from "@/types/journal";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface BulletItemProps {
   id: string;
@@ -46,6 +46,8 @@ const BulletItem: React.FC<BulletItemProps> = ({
   const [resizingImage, setResizingImage] = useState<string | null>(null);
   const [initialMousePos, setInitialMousePos] = useState({ x: 0, y: 0 });
   const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
+  
+  const [showControls, setShowControls] = useState(false);
   
   const handleChange = (e: React.FormEvent<HTMLElement>) => {
     onUpdate(id, e.currentTarget.innerHTML);
@@ -95,6 +97,14 @@ const BulletItem: React.FC<BulletItemProps> = ({
     if (e.target.files && e.target.files[0]) {
       onImageUpload(id, e.target.files[0]);
     }
+  };
+
+  const handleAddCollapsibleSection = () => {
+    // First create a child bullet
+    onAddChild(id);
+    
+    // Set the new child to be a section (this is handled in the parent component)
+    // The parent already has the logic to make the child a section
   };
 
   const toggleBold = () => {
@@ -151,14 +161,20 @@ const BulletItem: React.FC<BulletItemProps> = ({
   }, [resizingImage]);
 
   return (
-    <div className="bullet-item relative animate-fade-in">
-      <div className={cn(
-        "flex items-start group transition-all",
-        isDraggingImage && "bg-blue-50 rounded-md"
-      )}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}>
+    <div 
+      className="bullet-item relative animate-fade-in" 
+      onMouseEnter={() => setShowControls(true)}
+      onMouseLeave={() => setShowControls(false)}
+    >
+      <div 
+        className={cn(
+          "flex items-start group transition-all",
+          isDraggingImage && "bg-blue-50 rounded-md"
+        )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <div className="flex items-center mr-1 mt-1.5">
           {children.length > 0 ? (
             <div 
@@ -166,9 +182,9 @@ const BulletItem: React.FC<BulletItemProps> = ({
               onClick={() => onToggleCollapse(id)}
             >
               {isCollapsed ? (
-                <ChevronRight className="h-4 w-4 text-journal-bulletCollapsed" />
+                <ChevronRight className="h-4 w-4 text-journal-bulletCollapsed animate-fade-in" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-journal-bullet" />
+                <ChevronDown className="h-4 w-4 text-journal-bullet animate-fade-in" />
               )}
             </div>
           ) : (
@@ -180,9 +196,10 @@ const BulletItem: React.FC<BulletItemProps> = ({
         
         <div className="flex-1 min-w-0">
           <div className="relative">
+            {/* Bullet editing toolbar */}
             <div 
               className={cn(
-                "invisible absolute -top-8 left-0 bg-white border rounded shadow-sm p-1 flex space-x-1 group-hover:visible",
+                "invisible absolute -top-8 left-0 bg-white border rounded shadow-sm p-1 flex space-x-1 group-hover:visible z-10 animate-fade-in",
                 isEditing && "visible"
               )}
             >
@@ -217,6 +234,28 @@ const BulletItem: React.FC<BulletItemProps> = ({
               className="outline-none py-1 min-h-[1.5rem] break-words"
               tagName="div"
             />
+
+            {/* Add collapsible section button - appears on hover */}
+            {showControls && (
+              <div 
+                className="absolute -right-8 top-0 animate-fade-in"
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button 
+                      onClick={handleAddCollapsibleSection} 
+                      className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                      aria-label="Add collapsible section"
+                    >
+                      <ListTree className="h-3.5 w-3.5 text-gray-600" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="text-xs">Add collapsible section</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )}
           </div>
           
           {/* Display images attached to this bullet */}
@@ -239,7 +278,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
                 >
                   <img 
                     src={img.url} 
-                    className="max-w-full rounded border border-gray-200" 
+                    className="max-w-full rounded border border-gray-200 animate-fade-in" 
                     alt=""
                     style={{
                       width: '100%',
@@ -263,7 +302,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
           </div>
           
           {!isCollapsed && children.length > 0 && (
-            <div className="ml-5 border-l border-gray-200 pl-2">
+            <div className="ml-5 border-l border-gray-200 pl-2 animate-accordion-down">
               {children.map((child) => (
                 <BulletItem
                   key={child.id}

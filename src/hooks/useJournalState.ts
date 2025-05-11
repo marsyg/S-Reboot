@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +68,13 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
       const newSet = new Set(prev);
       newSet.delete(parentId);
       return newSet;
+    });
+    
+    // Show a toast when adding a nested section
+    toast({
+      title: "Added new item",
+      description: "New nested item has been added.",
+      duration: 2000,
     });
   };
 
