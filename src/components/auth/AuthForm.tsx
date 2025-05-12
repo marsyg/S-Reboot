@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
+import { signInWithEmail, signUpWithEmail } from "@/integrations/supabase/auth";
 
 type AuthMode = "login" | "signup";
 
@@ -23,24 +23,23 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     setIsLoading(true);
 
     try {
-      // Simulate authentication - in a real app, this would connect to a backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       if (mode === "login") {
-        // Simulate login success
+        const data = await signInWithEmail(email, password);
         toast.success("Successfully logged in!");
-        localStorage.setItem("user", JSON.stringify({ email, name: "User" }));
+        // Store user in localStorage for compatibility with current app
+        localStorage.setItem("user", JSON.stringify({ email, name: data.user?.user_metadata?.full_name || "User" }));
       } else {
-        // Simulate signup success
-        toast.success("Account created successfully!");
+        const data = await signUpWithEmail(email, password);
+        toast.success("Account created successfully! Please check your email to confirm.");
         localStorage.setItem("user", JSON.stringify({ email, name }));
       }
-      
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error) {
-      toast.error("Authentication failed. Please try again.");
+    } catch (error: unknown) {
+      let message = "Authentication failed. Please try again.";
+      if (error instanceof Error) message = error.message;
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +106,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
             />
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
+        <CardFooter className="flex flex-col gap-2">
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading
               ? "Processing..."
