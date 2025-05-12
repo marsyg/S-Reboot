@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { ChevronDown, ChevronRight, Image, Bold, Italic, Underline, ListTree, X, Maximize } from "lucide-react";
@@ -132,9 +131,8 @@ const BulletItem: React.FC<BulletItemProps> = ({
     }
   };
 
-  // FIX: Modified text formatting functions to properly apply formatting to the selection
   const toggleBold = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent the button from losing focus
+    e.preventDefault();
     document.execCommand('bold', false);
     if (contentRef.current) {
       contentRef.current.focus();
@@ -157,7 +155,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
     }
   };
 
-  // Toggle image alignment
   const cycleImagePosition = (imageId: string) => {
     setImagePosition(prev => {
       const newPosition = prev === 'left' ? 'center' : prev === 'center' ? 'right' : 'left';
@@ -165,7 +162,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
     });
   };
 
-  // Image resize handlers
   const startResizing = (imageId: string, e: React.MouseEvent, width: number, height?: number) => {
     e.preventDefault();
     e.stopPropagation();
@@ -181,7 +177,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
     if (resizingImage && onImageResize) {
       e.preventDefault();
       
-      // Calculate new dimensions based on mouse movement
       const deltaX = e.clientX - initialMousePos.x;
       const newWidth = Math.max(50, initialSize.width + deltaX);
       
@@ -201,6 +196,9 @@ const BulletItem: React.FC<BulletItemProps> = ({
       document.removeEventListener('mouseup', stopResizing);
     };
   }, [resizingImage]);
+
+  // Filter images that belong to this bullet item
+  const bulletImages = images.filter(img => img.id.startsWith(id + "-"));
 
   return (
     <div 
@@ -318,10 +316,9 @@ const BulletItem: React.FC<BulletItemProps> = ({
           </div>
           
           {/* Display images attached to this bullet */}
-          <div className={`mt-3 ${imagePosition === 'left' ? 'float-left mr-4' : imagePosition === 'right' ? 'float-right ml-4' : 'flex justify-center'}`}>
-            {images
-              .filter(img => img.id.startsWith(id + "-"))
-              .map((img) => (
+          {bulletImages.length > 0 && (
+            <div className={`mt-3 ${imagePosition === 'left' ? 'float-left mr-4' : imagePosition === 'right' ? 'float-right ml-4' : 'flex justify-center'}`}>
+              {bulletImages.map((img) => (
                 <div 
                   key={img.id} 
                   className={cn(
@@ -378,7 +375,8 @@ const BulletItem: React.FC<BulletItemProps> = ({
                   </div>
                 </div>
               ))}
-          </div>
+            </div>
+          )}
           
           {/* Improved multilevel collapsible sections implementation */}
           {children.length > 0 && (
