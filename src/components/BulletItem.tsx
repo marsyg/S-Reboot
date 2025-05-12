@@ -134,14 +134,17 @@ const BulletItem: React.FC<BulletItemProps> = ({
 
   const toggleBold = () => {
     document.execCommand('bold', false);
+    contentRef.current?.focus();
   };
 
   const toggleItalic = () => {
     document.execCommand('italic', false);
+    contentRef.current?.focus();
   };
 
   const toggleUnderline = () => {
     document.execCommand('underline', false);
+    contentRef.current?.focus();
   };
 
   // Toggle image alignment
@@ -226,10 +229,10 @@ const BulletItem: React.FC<BulletItemProps> = ({
         
         <div className="flex-1 min-w-0">
           <div className="relative">
-            {/* Bullet editing toolbar - modified to only show when current bullet is being edited */}
+            {/* Text formatting toolbar - only visible when this specific bullet is being edited */}
             <div 
               className={cn(
-                "invisible absolute -top-8 left-0 bg-white border rounded-md shadow-sm p-1.5 flex space-x-1.5 z-10 animate-fade-in",
+                "absolute -top-8 left-0 bg-white border rounded-md shadow-sm p-1.5 flex space-x-1.5 z-10 animate-fade-in",
                 isEditing ? "visible" : "invisible"
               )}
               style={{ transform: "translateY(-4px)" }}
@@ -352,7 +355,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
               ))}
           </div>
           
-          {/* Fix for the multilevel collapsible section issue - use a proper tree structure */}
+          {/* Improved multilevel collapsible sections implementation */}
           {children.length > 0 && (
             <Collapsible
               open={!isCollapsed}
