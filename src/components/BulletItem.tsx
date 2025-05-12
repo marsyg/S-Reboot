@@ -132,19 +132,29 @@ const BulletItem: React.FC<BulletItemProps> = ({
     }
   };
 
-  const toggleBold = () => {
+  // FIX: Modified text formatting functions to properly apply formatting to the selection
+  const toggleBold = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent the button from losing focus
     document.execCommand('bold', false);
-    contentRef.current?.focus();
+    if (contentRef.current) {
+      contentRef.current.focus();
+    }
   };
 
-  const toggleItalic = () => {
+  const toggleItalic = (e: React.MouseEvent) => {
+    e.preventDefault();
     document.execCommand('italic', false);
-    contentRef.current?.focus();
+    if (contentRef.current) {
+      contentRef.current.focus();
+    }
   };
 
-  const toggleUnderline = () => {
+  const toggleUnderline = (e: React.MouseEvent) => {
+    e.preventDefault();
     document.execCommand('underline', false);
-    contentRef.current?.focus();
+    if (contentRef.current) {
+      contentRef.current.focus();
+    }
   };
 
   // Toggle image alignment
@@ -197,7 +207,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
       className="bullet-item relative animate-fade-in" 
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
-      onKeyDown={handleKeyDown}
     >
       <div 
         className={cn(
@@ -230,33 +239,49 @@ const BulletItem: React.FC<BulletItemProps> = ({
         <div className="flex-1 min-w-0">
           <div className="relative">
             {/* Text formatting toolbar - only visible when this specific bullet is being edited */}
-            <div 
-              className={cn(
-                "absolute -top-8 left-0 bg-white border rounded-md shadow-sm p-1.5 flex space-x-1.5 z-10 animate-fade-in",
-                isEditing ? "visible" : "invisible"
-              )}
-              style={{ transform: "translateY(-4px)" }}
-            >
-              <button onClick={toggleBold} className="p-1 hover:bg-gray-100 rounded">
-                <Bold className="h-4 w-4" />
-              </button>
-              <button onClick={toggleItalic} className="p-1 hover:bg-gray-100 rounded">
-                <Italic className="h-4 w-4" />
-              </button>
-              <button onClick={toggleUnderline} className="p-1 hover:bg-gray-100 rounded">
-                <Underline className="h-4 w-4" />
-              </button>
-              <button onClick={handleImageUpload} className="p-1 hover:bg-gray-100 rounded">
-                <Image className="h-4 w-4" />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileInputChange}
-              />
-            </div>
+            {isEditing && (
+              <div 
+                className="absolute -top-8 left-0 bg-white border rounded-md shadow-sm p-1.5 flex space-x-1.5 z-10 animate-fade-in"
+                style={{ transform: "translateY(-4px)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button 
+                  onClick={toggleBold} 
+                  className="p-1 hover:bg-gray-100 rounded"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <Bold className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={toggleItalic} 
+                  className="p-1 hover:bg-gray-100 rounded"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <Italic className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={toggleUnderline} 
+                  className="p-1 hover:bg-gray-100 rounded"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <Underline className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={handleImageUpload} 
+                  className="p-1 hover:bg-gray-100 rounded"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <Image className="h-4 w-4" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                />
+              </div>
+            )}
             
             <ContentEditable
               innerRef={contentRef}
@@ -292,7 +317,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
             )}
           </div>
           
-          {/* Display images attached to this bullet - with improved styling and functionality */}
+          {/* Display images attached to this bullet */}
           <div className={`mt-3 ${imagePosition === 'left' ? 'float-left mr-4' : imagePosition === 'right' ? 'float-right ml-4' : 'flex justify-center'}`}>
             {images
               .filter(img => img.id.startsWith(id + "-"))

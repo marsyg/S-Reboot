@@ -107,16 +107,21 @@ const Index = () => {
     const loadComments = async () => {
       if (!activeJournal) return;
       
-      const { data, error } = await supabase
-        .from("comments")
-        .select("*")
-        .eq("journal_id", activeJournal)
-        .order("created_at", { ascending: false });
-        
-      if (error) {
-        console.error("Error loading comments:", error);
-      } else if (data) {
-        setComments(data);
+      try {
+        const { data, error } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("journal_id", activeJournal)
+          .order("created_at", { ascending: false });
+          
+        if (error) {
+          console.error("Error loading comments:", error);
+        } else if (data) {
+          const typedComments: Comment[] = data as unknown as Comment[];
+          setComments(typedComments);
+        }
+      } catch (error) {
+        console.error("Failed to load comments:", error);
       }
     };
     
@@ -140,20 +145,23 @@ const Index = () => {
     setIsCommenting(true);
     
     try {
+      // Create the new comment object
+      const commentData = {
+        journal_id: activeJournal,
+        user_id: user.id,
+        content: newComment.trim()
+      };
+      
       const { data, error } = await supabase
         .from("comments")
-        .insert({
-          journal_id: activeJournal,
-          user_id: user.id,
-          content: newComment.trim()
-        })
+        .insert(commentData)
         .select();
         
       if (error) throw error;
       
-      if (data) {
+      if (data && data.length > 0) {
         // Add the new comment to the list
-        const newCommentObj = data[0];
+        const newCommentObj = data[0] as unknown as Comment;
         setComments([newCommentObj, ...comments]);
         setNewComment("");
         
