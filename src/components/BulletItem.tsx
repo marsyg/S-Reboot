@@ -226,11 +226,11 @@ const BulletItem: React.FC<BulletItemProps> = ({
         
         <div className="flex-1 min-w-0">
           <div className="relative">
-            {/* Bullet editing toolbar - modified positioning and visibility */}
+            {/* Bullet editing toolbar - modified to only show when current bullet is being edited */}
             <div 
               className={cn(
-                "invisible absolute -top-8 left-0 bg-white border rounded-md shadow-sm p-1.5 flex space-x-1.5 group-hover:visible z-10 animate-fade-in",
-                isEditing && "visible"
+                "invisible absolute -top-8 left-0 bg-white border rounded-md shadow-sm p-1.5 flex space-x-1.5 z-10 animate-fade-in",
+                isEditing ? "visible" : "invisible"
               )}
               style={{ transform: "translateY(-4px)" }}
             >
@@ -266,7 +266,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
               tagName="div"
             />
 
-            {/* Add collapsible section button - appears on hover */}
+            {/* Add collapsible section button - appears only on hover of this specific bullet */}
             {showControls && onAddCollapsibleBullet && (
               <div 
                 className="absolute -right-8 top-0 flex gap-1.5 animate-fade-in"
@@ -352,7 +352,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
               ))}
           </div>
           
-          {/* Improved nested collapsible sections with better animations */}
+          {/* Fix for the multilevel collapsible section issue - use a proper tree structure */}
           {children.length > 0 && (
             <Collapsible
               open={!isCollapsed}

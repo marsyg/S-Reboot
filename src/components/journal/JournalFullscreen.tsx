@@ -59,8 +59,8 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
       </DialogHeader>
       
       <div className="flex-1 overflow-auto p-8 bg-gray-50">
-        <div className="journal-content bg-journal-background p-8 rounded-lg shadow transform perspective-1000 translate-y-0 min-h-full max-w-4xl mx-auto"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.03)" }}>
+        <div className="journal-content bg-journal-background p-8 rounded-lg shadow-md transform perspective-1000 translate-y-0 min-h-full max-w-4xl mx-auto"
+          style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.1), 0 6px 16px rgba(0,0,0,0.05)" }}>
           <JournalContent
             bullets={bullets}
             onUpdate={onUpdate}
