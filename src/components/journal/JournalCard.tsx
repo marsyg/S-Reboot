@@ -45,8 +45,8 @@ const JournalCard: React.FC<JournalCardProps> = ({
   onExportOPML,
 }) => {
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-md animate-fade-in hover:shadow-lg transition-all duration-300">
-      <CardHeader className="bg-gray-50 rounded-t-lg">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg animate-fade-in hover:shadow-xl transition-all duration-300 transform perspective-1000 border-gray-200">
+      <CardHeader className="bg-gray-50 rounded-t-lg border-b border-gray-100">
         <JournalToolbar
           title={title}
           setTitle={setTitle}
@@ -58,8 +58,9 @@ const JournalCard: React.FC<JournalCardProps> = ({
           onAddCollapsibleBullet={onAddCollapsibleBullet}
         />
       </CardHeader>
-      <CardContent className="pt-4">
-        <div className="journal-content min-h-[300px] p-4 bg-journal-background rounded shadow-inner">
+      <CardContent className="p-5">
+        <div className="journal-content min-h-[300px] p-6 bg-journal-background rounded-lg shadow-sm transform translate-y-0 hover:translate-y-[-1px] transition-all duration-200" 
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.03)" }}>
           <JournalContent
             bullets={bullets}
             onUpdate={onUpdate}
