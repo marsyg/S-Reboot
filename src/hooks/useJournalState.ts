@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/hooks/use-toast";
@@ -72,7 +71,6 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
       return newSet;
     });
     
-    // Show a toast when adding a nested section
     toast({
       title: "Added new nested item",
       description: "New nested item has been added.",
@@ -208,26 +206,65 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
   };
 
   // Handle image upload for a specific bullet
-  const handleImageUpload = (bulletId: string, file: File) => {
-    // Create a URL for the image file
-    const imageUrl = URL.createObjectURL(file);
-    const imageId = `${bulletId}-${uuidv4()}`;
+  const handleImageUpload = async (bulletId: string, file: File) => {
+    try {
+      // Show loading toast
+      toast({
+        title: "Uploading image...",
+        description: "Please wait while we upload your image.",
+      });
 
-    // Add the image to our images array
-    setImages(prev => [
-      ...prev, 
-      { 
-        id: imageId, 
-        url: imageUrl,
-        width: 300, // Default width
-        height: undefined // Auto height
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Authentication required");
       }
-    ]);
 
-    toast({
-      title: "Image uploaded",
-      description: "Image has been added to your journal entry.",
-    });
+      // Generate a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${bulletId}-${uuidv4()}.${fileExt}`;
+      const filePath = `${session.user.id}/${fileName}`;
+
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('journal-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      // Get the public URL for the uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from('journal-images')
+        .getPublicUrl(filePath);
+
+      // Add the image to our images array
+      const imageId = `${bulletId}-${uuidv4()}`;
+      setImages(prev => [
+        ...prev,
+        {
+          id: imageId,
+          url: publicUrl,
+          width: 300, // Default width
+          height: undefined, // Auto height
+        }
+      ]);
+
+      toast({
+        title: "Image uploaded",
+        description: "Image has been added to your journal entry.",
+      });
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Handle image resizing
@@ -253,14 +290,12 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     setBullets([...bullets, newBullet]);
   };
 
-  // FIX: Updated the nested section logic to properly create a section at the same level
+  // Add a collapsible section
   const addCollapsibleBullet = (parentId?: string) => {
     const newParentId = uuidv4();
     const childId = uuidv4();
     
-    // If no parentId specified, add at root level
     if (!parentId) {
-      // Create a new collapsible section at the root level
       const newSection: BulletItemType = {
         id: newParentId,
         content: "New section",
@@ -279,7 +314,6 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
       
       setBullets([...bullets, newSection]);
     } else {
-      // Find the parent's level and parent's parent to add at the same level
       const findBulletInfo = (
         items: BulletItemType[],
         targetId: string,
@@ -301,10 +335,8 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
       const bulletInfo = findBulletInfo(bullets, parentId);
       
       if (bulletInfo && bulletInfo.parentPath.length > 0) {
-        // Get the immediate parent ID
         const immediateParentId = bulletInfo.parentPath[bulletInfo.parentPath.length - 1];
         
-        // Create a new collapsible section at the same level as the target
         const nestedSection: BulletItemType = {
           id: newParentId,
           content: "New section",
@@ -321,7 +353,6 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
           ]
         };
         
-        // Helper function to add the new section as a sibling
         const addSiblingToParent = (
           items: BulletItemType[],
           targetParentId: string,
@@ -330,18 +361,16 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
         ): BulletItemType[] => {
           return items.map(item => {
             if (item.id === targetParentId) {
-              // Find the index of the target in the children
               const targetIndex = item.children.findIndex(child => child.id === targetId);
               
               if (targetIndex !== -1) {
-                // Insert the new section after the target in the children array
                 const newChildren = [...item.children];
                 newChildren.splice(targetIndex + 1, 0, newSection);
                 
                 return {
                   ...item,
                   children: newChildren,
-                  isCollapsed: false // Ensure parent is expanded
+                  isCollapsed: false
                 };
               }
             }
@@ -359,12 +388,9 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
         
         setBullets(addSiblingToParent(bullets, immediateParentId, parentId, nestedSection));
       } else {
-        // If we couldn't find parent info or there's no parent (root level),
-        // add it as a child of the target (fallback to old behavior)
         const addNestedSectionToParent = (items: BulletItemType[]): BulletItemType[] => {
           return items.map(item => {
             if (item.id === parentId) {
-              // Create a new nested section with the appropriate level
               const nestedSectionLevel = item.level + 1;
               const nestedSection: BulletItemType = {
                 id: newParentId,
@@ -382,11 +408,10 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
                 ]
               };
               
-              // Add it to the parent's children
               return {
                 ...item,
                 children: [...item.children, nestedSection],
-                isCollapsed: false // Ensure parent is expanded
+                isCollapsed: false
               };
             }
             
@@ -401,11 +426,9 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
           });
         };
 
-        // Update the bullets with the new nested section
         setBullets(addNestedSectionToParent(bullets));
       }
       
-      // Ensure the parent is expanded
       setCollapsedItems(prev => {
         const newSet = new Set(prev);
         newSet.delete(parentId);
@@ -420,7 +443,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     });
   };
 
-  // Convert the bullets data to simplified JSON for save/export
+  // Export functions
   const exportToJson = () => {
     const simplifyBullet = (bullet: BulletItemType) => {
       return {
@@ -438,7 +461,6 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
       timestamp: new Date().toISOString(),
     };
 
-    // Create and trigger download
     const dataStr = JSON.stringify(data, null, 2);
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
     
@@ -455,9 +477,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
     });
   };
 
-  // Export to OPML format
   const exportToOPML = () => {
-    // Create OPML content
     const buildOutline = (bullet: BulletItemType): string => {
       let outlineContent = `<outline text="${escapeXml(bullet.content)}"`;
       
@@ -474,7 +494,6 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
       return outlineContent;
     };
 
-    // Escape special XML characters
     const escapeXml = (unsafe: string): string => {
       return unsafe
         .replace(/&/g, '&amp;')
@@ -484,7 +503,6 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
         .replace(/'/g, '&apos;');
     };
 
-    // Build the complete OPML document
     const opmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="2.0">
   <head>
@@ -496,7 +514,6 @@ ${bullets.map(buildOutline).join('')}
   </body>
 </opml>`;
 
-    // Create and trigger download
     const dataUri = `data:text/xml;charset=utf-8,${encodeURIComponent(opmlContent)}`;
     
     const linkElement = document.createElement('a');
@@ -515,7 +532,6 @@ ${bullets.map(buildOutline).join('')}
   // Save journal to Supabase
   const saveJournal = async () => {
     try {
-      // Get current user session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -527,7 +543,6 @@ ${bullets.map(buildOutline).join('')}
         return;
       }
       
-      // Prepare journal data
       const simpleBullets = bullets.map(bullet => ({
         id: bullet.id,
         content: bullet.content,
@@ -535,7 +550,6 @@ ${bullets.map(buildOutline).join('')}
         isCollapsed: collapsedItems.has(bullet.id)
       }));
 
-      // Convert images to a simpler format for JSON storage
       const simpleImages = images.map(img => ({
         id: img.id,
         url: img.url,
@@ -543,13 +557,11 @@ ${bullets.map(buildOutline).join('')}
         height: img.height
       }));
 
-      // Create a properly typed content object for Supabase
       const contentObject = {
         bullets: simpleBullets,
         images: simpleImages
       };
       
-      // Save to Supabase
       const { error } = await supabase
         .from('journals')
         .insert({
@@ -577,7 +589,6 @@ ${bullets.map(buildOutline).join('')}
     }
   };
 
-  // Map the bullets with their collapse state
   const mapBulletsWithCollapseState = (items: BulletItemType[]): BulletItemType[] => {
     return items.map(item => ({
       ...item,
