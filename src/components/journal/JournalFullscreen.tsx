@@ -43,8 +43,8 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
   onExportOPML,
 }) => {
   return (
-    <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0 animate-fade-in">
-      <DialogHeader className="p-4 border-b">
+    <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0 animate-fade-in shadow-xl border-gray-200">
+      <DialogHeader className="p-4 border-b bg-gray-50">
         <DialogTitle className="sr-only">Journal Editor</DialogTitle>
         <JournalToolbar
           title={title}
@@ -58,8 +58,9 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
         />
       </DialogHeader>
       
-      <div className="flex-1 overflow-auto p-6 bg-gray-50">
-        <div className="journal-content bg-journal-background p-6 rounded-lg shadow-sm min-h-full max-w-4xl mx-auto">
+      <div className="flex-1 overflow-auto p-8 bg-gray-50">
+        <div className="journal-content bg-journal-background p-8 rounded-lg shadow transform perspective-1000 translate-y-0 min-h-full max-w-4xl mx-auto"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.03)" }}>
           <JournalContent
             bullets={bullets}
             onUpdate={onUpdate}

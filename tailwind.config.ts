@@ -118,6 +118,19 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.2s ease-out',
 				'fade-out': 'fade-out 0.2s ease-out'
+			},
+			transitionProperty: {
+				'height': 'height',
+				'transform': 'transform',
+			},
+			transformStyle: {
+				'3d': 'preserve-3d',
+				'flat': 'flat',
+			},
+			perspective: {
+				'none': 'none',
+				'500': '500px',
+				'1000': '1000px',
 			}
 		}
 	},

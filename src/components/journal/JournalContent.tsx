@@ -57,7 +57,7 @@ const JournalContent: React.FC<JournalContentProps> = ({
   const bulletProps = bullets.map(convertToBulletItemProps);
 
   return (
-    <div className="journal-content flex-1 overflow-y-auto">
+    <div className="journal-content flex-1 overflow-y-auto px-2">
       {bulletProps.map((bullet) => (
         <BulletItem
           key={bullet.id}

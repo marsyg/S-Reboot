@@ -1,11 +1,13 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { ChevronDown, ChevronRight, Image, Bold, Italic, Underline, ListTree } from "lucide-react";
+import { ChevronDown, ChevronRight, Image, Bold, Italic, Underline, ListTree, X, Maximize } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ContentEditable from "react-contenteditable";
 import { JournalImage } from "@/types/journal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 export interface BulletItemProps {
   id: string;
@@ -51,12 +53,20 @@ const BulletItem: React.FC<BulletItemProps> = ({
   const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
   
   const [showControls, setShowControls] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imagePosition, setImagePosition] = useState<'left' | 'right' | 'center'>('center');
   
   const handleChange = (e: React.FormEvent<HTMLElement>) => {
     onUpdate(id, e.currentTarget.innerHTML);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape" && previewImage) {
+      e.preventDefault();
+      setPreviewImage(null);
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onAddBulletAfter(id);
@@ -70,6 +80,20 @@ const BulletItem: React.FC<BulletItemProps> = ({
       onDelete(id);
     }
   };
+
+  // Global keyboard listener for ESC key
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && previewImage) {
+        setPreviewImage(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscKey);
+    return () => {
+      document.removeEventListener("keydown", handleEscKey);
+    };
+  }, [previewImage]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -120,6 +144,14 @@ const BulletItem: React.FC<BulletItemProps> = ({
     document.execCommand('underline', false);
   };
 
+  // Toggle image alignment
+  const cycleImagePosition = (imageId: string) => {
+    setImagePosition(prev => {
+      const newPosition = prev === 'left' ? 'center' : prev === 'center' ? 'right' : 'left';
+      return newPosition;
+    });
+  };
+
   // Image resize handlers
   const startResizing = (imageId: string, e: React.MouseEvent, width: number, height?: number) => {
     e.preventDefault();
@@ -139,10 +171,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
       // Calculate new dimensions based on mouse movement
       const deltaX = e.clientX - initialMousePos.x;
       const newWidth = Math.max(50, initialSize.width + deltaX);
-      
-      // Optional: maintain aspect ratio
-      // const aspectRatio = initialSize.height / initialSize.width;
-      // const newHeight = newWidth * aspectRatio;
       
       onImageResize(resizingImage, newWidth);
     }
@@ -166,6 +194,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
       className="bullet-item relative animate-fade-in" 
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
+      onKeyDown={handleKeyDown}
     >
       <div 
         className={cn(
@@ -197,12 +226,13 @@ const BulletItem: React.FC<BulletItemProps> = ({
         
         <div className="flex-1 min-w-0">
           <div className="relative">
-            {/* Bullet editing toolbar */}
+            {/* Bullet editing toolbar - modified positioning and visibility */}
             <div 
               className={cn(
-                "invisible absolute -top-8 left-0 bg-white border rounded shadow-sm p-1 flex space-x-1 group-hover:visible z-10 animate-fade-in",
+                "invisible absolute -top-8 left-0 bg-white border rounded-md shadow-sm p-1.5 flex space-x-1.5 group-hover:visible z-10 animate-fade-in",
                 isEditing && "visible"
               )}
+              style={{ transform: "translateY(-4px)" }}
             >
               <button onClick={toggleBold} className="p-1 hover:bg-gray-100 rounded">
                 <Bold className="h-4 w-4" />
@@ -259,15 +289,15 @@ const BulletItem: React.FC<BulletItemProps> = ({
             )}
           </div>
           
-          {/* Display images attached to this bullet */}
-          <div className="ml-2 mt-1 flex flex-wrap gap-2">
+          {/* Display images attached to this bullet - with improved styling and functionality */}
+          <div className={`mt-3 ${imagePosition === 'left' ? 'float-left mr-4' : imagePosition === 'right' ? 'float-right ml-4' : 'flex justify-center'}`}>
             {images
               .filter(img => img.id.startsWith(id + "-"))
               .map((img) => (
                 <div 
                   key={img.id} 
                   className={cn(
-                    "relative group inline-block",
+                    "relative group inline-block mb-2",
                     resizingImage === img.id && "ring-2 ring-blue-500"
                   )}
                   style={{
@@ -279,15 +309,35 @@ const BulletItem: React.FC<BulletItemProps> = ({
                 >
                   <img 
                     src={img.url} 
-                    className="max-w-full rounded border border-gray-200 animate-fade-in" 
+                    className="max-w-full rounded-md border border-gray-200 shadow-sm cursor-pointer animate-fade-in hover:shadow-md transition-shadow" 
                     alt=""
                     style={{
                       width: '100%',
                       height: '100%',
                       objectFit: 'contain'
                     }}
+                    onClick={() => setPreviewImage(img.url)}
                   />
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black bg-opacity-20 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black bg-opacity-20 transition-opacity flex items-center justify-center rounded-md">
+                    {/* Image controls */}
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <button
+                        className="bg-white p-1.5 rounded-full shadow hover:bg-gray-100 transition-colors"
+                        onClick={() => setPreviewImage(img.url)}
+                      >
+                        <Maximize className="h-3.5 w-3.5 text-gray-700" />
+                      </button>
+                      <button
+                        className="bg-white p-1.5 rounded-full shadow hover:bg-gray-100 transition-colors"
+                        onClick={() => cycleImagePosition(img.id)}
+                      >
+                        <svg className="h-3.5 w-3.5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <path d={imagePosition === 'left' ? "M9 12h9M9 16h9" : imagePosition === 'right' ? "M6 12h9M6 16h9" : "M6 12h12M6 16h12"} />
+                        </svg>
+                      </button>
+                    </div>
+                    
                     {/* Resize handle */}
                     <div 
                       className="absolute bottom-0 right-0 w-5 h-5 bg-white border border-gray-300 rounded-tl cursor-se-resize flex items-center justify-center"
@@ -328,6 +378,30 @@ const BulletItem: React.FC<BulletItemProps> = ({
               </CollapsibleContent>
             </Collapsible>
           )}
+
+          {/* Image fullscreen dialog */}
+          <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+            <DialogContent className="max-w-[90vw] p-0 bg-black bg-opacity-90 border-none overflow-hidden">
+              <div className="relative flex items-center justify-center h-screen max-h-[90vh]">
+                {previewImage && (
+                  <img 
+                    src={previewImage} 
+                    alt="Preview"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                )}
+                <button
+                  className="absolute top-4 right-4 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
+                  onClick={() => setPreviewImage(null)}
+                >
+                  <X className="h-6 w-6 text-white" />
+                </button>
+                <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm opacity-70">
+                  Press ESC to close
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
