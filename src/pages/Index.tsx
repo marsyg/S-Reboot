@@ -9,8 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Edit, MessageCircle, Share2, Heart } from "lucide-react";
+import { Loader2, Edit, MessageCircle, Share2, Heart, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface JournalCard {
   id: string;
@@ -38,6 +39,7 @@ const Index = () => {
   const [journals, setJournals] = useState<JournalCard[]>([]);
   const [activeJournal, setActiveJournal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeletingJournal, setIsDeletingJournal] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -56,34 +58,7 @@ const Index = () => {
       setUser(session.user);
       
       // Load journals from Supabase
-      const { data, error } = await supabase
-        .from("journals")
-        .select("*")
-        .order("updated_at", { ascending: false });
-        
-      if (error) {
-        console.error("Error loading journals:", error);
-        toast({
-          title: "Failed to load journals",
-          description: "Please try refreshing the page.",
-          variant: "destructive"
-        });
-      } else {
-        // Transform data to match our JournalCard interface
-        const formattedJournals = data.map((journal: any) => ({
-          id: journal.id,
-          title: journal.title,
-          lastEdited: new Date(journal.updated_at),
-          user_id: journal.user_id,
-          published: true,
-          likes: Math.floor(Math.random() * 50), // Placeholder for now
-          comments: Math.floor(Math.random() * 20), // Placeholder for now
-        }));
-        
-        setJournals(formattedJournals);
-      }
-      
-      setIsLoading(false);
+      await loadJournals();
     };
     
     checkAuthAndLoadJournals();
@@ -102,6 +77,81 @@ const Index = () => {
     };
   }, [navigate, toast]);
   
+  const loadJournals = async () => {
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from("journals")
+        .select("*")
+        .order("updated_at", { ascending: false });
+        
+      if (error) {
+        console.error("Error loading journals:", error);
+        toast({
+          title: "Failed to load journals",
+          description: "Please try refreshing the page.",
+          variant: "destructive"
+        });
+      } else if (data) {
+        // Load user profiles to get usernames
+        const userIds = [...new Set(data.map((journal: any) => journal.user_id))];
+        
+        let usernamesMap: Record<string, string> = {};
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, username")
+            .in("id", userIds);
+            
+          if (profiles) {
+            usernamesMap = profiles.reduce((acc: Record<string, string>, profile: any) => {
+              acc[profile.id] = profile.username || "Anonymous";
+              return acc;
+            }, {});
+          }
+        }
+        
+        // Count comments for each journal
+        const commentsCountPromises = data.map(async (journal: any) => {
+          const { count, error } = await supabase
+            .from("comments")
+            .select("id", { count: 'exact', head: true })
+            .eq("journal_id", journal.id);
+            
+          return { 
+            journalId: journal.id, 
+            count: error ? 0 : (count || 0) 
+          };
+        });
+        
+        const commentsResults = await Promise.all(commentsCountPromises);
+        const commentsCountMap = commentsResults.reduce((acc: Record<string, number>, result) => {
+          acc[result.journalId] = result.count;
+          return acc;
+        }, {});
+        
+        // Transform data to match our JournalCard interface
+        const formattedJournals = data.map((journal: any) => ({
+          id: journal.id,
+          title: journal.title,
+          lastEdited: new Date(journal.updated_at),
+          user_id: journal.user_id,
+          username: usernamesMap[journal.user_id] || "Anonymous",
+          published: true,
+          likes: Math.floor(Math.random() * 50), // Placeholder for now
+          comments: commentsCountMap[journal.id] || 0,
+        }));
+        
+        setJournals(formattedJournals);
+      }
+    } catch (error) {
+      console.error("Error in loadJournals:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   useEffect(() => {
     // Load comments if a journal is active
     const loadComments = async () => {
@@ -117,8 +167,30 @@ const Index = () => {
         if (error) {
           console.error("Error loading comments:", error);
         } else if (data) {
-          const typedComments: Comment[] = data as unknown as Comment[];
-          setComments(typedComments);
+          // Get usernames for comments
+          const userIds = [...new Set(data.map(comment => comment.user_id))];
+          
+          let usernamesMap: Record<string, string> = {};
+          if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, username")
+              .in("id", userIds);
+              
+            if (profiles) {
+              usernamesMap = profiles.reduce((acc: Record<string, string>, profile: any) => {
+                acc[profile.id] = profile.username || "Anonymous";
+                return acc;
+              }, {});
+            }
+          }
+          
+          const commentsWithUsernames = data.map(comment => ({
+            ...comment,
+            username: usernamesMap[comment.user_id] || "Anonymous"
+          }));
+          
+          setComments(commentsWithUsernames);
         }
       } catch (error) {
         console.error("Failed to load comments:", error);
@@ -161,7 +233,11 @@ const Index = () => {
       
       if (data && data.length > 0) {
         // Add the new comment to the list
-        const newCommentObj = data[0] as unknown as Comment;
+        const newCommentObj = {
+          ...data[0],
+          username: user.user_metadata?.username || "Anonymous"
+        } as Comment;
+        
         setComments([newCommentObj, ...comments]);
         setNewComment("");
         
@@ -179,6 +255,87 @@ const Index = () => {
       });
     } finally {
       setIsCommenting(false);
+    }
+  };
+  
+  const handleDeleteJournal = async (journalId: string) => {
+    if (!user) return;
+    
+    setIsDeletingJournal(true);
+    
+    try {
+      // First delete associated comments
+      const { error: commentsError } = await supabase
+        .from('comments')
+        .delete()
+        .eq('journal_id', journalId);
+        
+      if (commentsError) {
+        console.error("Error deleting comments:", commentsError);
+      }
+      
+      // Then delete the journal
+      const { error } = await supabase
+        .from('journals')
+        .delete()
+        .eq('id', journalId)
+        .eq('user_id', user.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Update local state
+      setJournals(journals.filter(journal => journal.id !== journalId));
+      
+      if (activeJournal === journalId) {
+        setActiveJournal(null);
+      }
+      
+      toast({
+        title: "Journal deleted",
+        description: "Your journal has been deleted successfully."
+      });
+    } catch (error) {
+      console.error("Error deleting journal:", error);
+      toast({
+        title: "Failed to delete journal",
+        description: "There was an error deleting your journal.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeletingJournal(false);
+    }
+  };
+  
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', user.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Update local state
+      setComments(comments.filter(comment => comment.id !== commentId));
+      
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been deleted successfully."
+      });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast({
+        title: "Failed to delete comment",
+        description: "There was an error deleting your comment.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -218,7 +375,10 @@ const Index = () => {
           <div className="flex justify-between items-center mb-4">
             <Button 
               variant="outline" 
-              onClick={() => setActiveJournal(null)}
+              onClick={() => {
+                setActiveJournal(null);
+                loadJournals(); // Refresh journals when going back
+              }}
               className="hover:scale-105 transition-transform"
             >
               Back to All Journals
@@ -229,6 +389,42 @@ const Index = () => {
                 <Share2 className="h-4 w-4" />
                 <span>Share</span>
               </Button>
+              
+              {journals.find(j => j.id === activeJournal)?.user_id === user?.id && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="flex items-center gap-1">
+                      <Trash2 className="h-4 w-4" />
+                      <span>Delete</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your journal and all associated comments.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => handleDeleteJournal(activeJournal)}
+                        disabled={isDeletingJournal}
+                      >
+                        {isDeletingJournal ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          'Delete'
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           </div>
           
@@ -274,18 +470,31 @@ const Index = () => {
               ) : (
                 comments.map((comment) => (
                   <div key={comment.id} className="border-b pb-4 animate-fade-in">
-                    <div className="flex items-center mb-2">
-                      <Avatar className="h-8 w-8 mr-2">
-                        <AvatarFallback>{comment.username?.substring(0, 2) || 'U'}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{comment.username || 'User'}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(comment.created_at).toLocaleString()}
-                        </p>
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center">
+                        <Avatar className="h-8 w-8 mr-2">
+                          <AvatarFallback>{comment.username?.substring(0, 2) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{comment.username || 'User'}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(comment.created_at).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
+                      
+                      {comment.user_id === user?.id && (
+                        <Button 
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
+                        </Button>
+                      )}
                     </div>
-                    <p className="text-gray-700">{comment.content}</p>
+                    <p className="text-gray-700 ml-10">{comment.content}</p>
                   </div>
                 ))
               )}
@@ -349,13 +558,48 @@ const Index = () => {
                   </Button>
                   
                   {journal.user_id === user?.id && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="hover:scale-105 transition-transform"
-                    >
-                      Share
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:scale-105 transition-transform"
+                      >
+                        Share
+                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:scale-105 transition-transform"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete your journal and all associated comments.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              className="bg-red-600 hover:bg-red-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteJournal(journal.id);
+                              }}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   )}
                 </CardFooter>
               </Card>

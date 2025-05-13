@@ -15,7 +15,7 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-
+  
   // Update a bullet's content
   const handleUpdateBullet = (id: string, content: string) => {
     const updateBulletInTree = (items: BulletItemType[]): BulletItemType[] => {
@@ -528,6 +528,59 @@ ${bullets.map(buildOutline).join('')}
     }
   };
 
+  // Delete journal from Supabase
+  const deleteJournal = async (journalId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to delete your journal.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // First delete associated comments
+      const { error: commentsError } = await supabase
+        .from('comments')
+        .delete()
+        .eq('journal_id', journalId);
+        
+      if (commentsError) {
+        console.error("Error deleting comments:", commentsError);
+      }
+      
+      // Then delete the journal
+      const { error } = await supabase
+        .from('journals')
+        .delete()
+        .eq('id', journalId)
+        .eq('user_id', session.user.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Journal deleted",
+        description: "Your journal has been deleted successfully.",
+      });
+      
+      return true;
+      
+    } catch (error) {
+      console.error("Error deleting journal:", error);
+      toast({
+        title: "Failed to delete",
+        description: "There was an error deleting your journal.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   const mapBulletsWithCollapseState = (items: BulletItemType[]): BulletItemType[] => {
     return items.map(item => ({
       ...item,
@@ -558,6 +611,7 @@ ${bullets.map(buildOutline).join('')}
     addCollapsibleBullet,
     exportToJson,
     exportToOPML,
-    saveJournal
+    saveJournal,
+    deleteJournal
   };
 };

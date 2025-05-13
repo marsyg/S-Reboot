@@ -27,7 +27,8 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
     addCollapsibleBullet,
     exportToJson,
     exportToOPML,
-    saveJournal
+    saveJournal,
+    deleteJournal
   } = useJournalState(initialTitle);
 
   return (
@@ -54,6 +55,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
           onPublish={saveJournal}
           isPublished={isPublished}
           isSaving={isSaving}
+          onDeleteJournal={deleteJournal}
         />
       )}
 
@@ -79,6 +81,7 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
           onPublish={saveJournal}
           isPublished={isPublished}
           isSaving={isSaving}
+          onDeleteJournal={deleteJournal}
         />
       </Dialog>
     </>
