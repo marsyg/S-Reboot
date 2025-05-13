@@ -25,6 +25,7 @@ interface JournalFullscreenProps {
   onPublish?: () => void;
   isPublished?: boolean;
   isSaving?: boolean;
+  onDeleteJournal?: (journalId: string) => Promise<boolean>;
 }
 
 const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
@@ -46,7 +47,8 @@ const JournalFullscreen: React.FC<JournalFullscreenProps> = ({
   onExportOPML,
   onPublish,
   isPublished,
-  isSaving
+  isSaving,
+  onDeleteJournal
 }) => {
   return (
     <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0 animate-fade-in shadow-xl border-gray-200">

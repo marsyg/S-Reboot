@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Journal from "@/components/Journal";
@@ -9,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Edit, MessageCircle, Share2, Heart, Trash2 } from "lucide-react";
+import { Loader2, Edit, MessageCircle, Share2, Heart, Trash2, BookOpen } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -365,9 +364,19 @@ const Index = () => {
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Flowy Scribe</h1>
           <p className="text-gray-600">Your nested journaling workspace</p>
         </div>
-        <Button variant="outline" onClick={() => supabase.auth.signOut()}>
-          Log Out
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={() => navigate('/posts')}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Browse Posts</span>
+          </Button>
+          <Button variant="outline" onClick={() => supabase.auth.signOut()}>
+            Log Out
+          </Button>
+        </div>
       </header>
       
       {activeJournal ? (

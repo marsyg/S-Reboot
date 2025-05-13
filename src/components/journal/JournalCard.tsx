@@ -27,6 +27,7 @@ interface JournalCardProps {
   onPublish?: () => void;
   isPublished?: boolean;
   isSaving?: boolean;
+  onDeleteJournal?: (journalId: string) => Promise<boolean>;
 }
 
 const JournalCard: React.FC<JournalCardProps> = ({
@@ -48,7 +49,8 @@ const JournalCard: React.FC<JournalCardProps> = ({
   onExportOPML,
   onPublish,
   isPublished,
-  isSaving
+  isSaving,
+  onDeleteJournal
 }) => {
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg animate-fade-in hover:shadow-xl transition-all duration-300 transform perspective-1000 border-gray-200">

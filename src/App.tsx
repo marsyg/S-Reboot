@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import Posts from "./pages/Posts";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,7 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/app" element={<AuthRoute element={<Index />} />} />
+          <Route path="/posts" element={<AuthRoute element={<Posts />} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
