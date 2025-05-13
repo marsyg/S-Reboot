@@ -24,6 +24,9 @@ interface JournalCardProps {
   setIsFullscreen: (isFullscreen: boolean) => void;
   onExport: () => void;
   onExportOPML: () => void;
+  onPublish?: () => void;
+  isPublished?: boolean;
+  isSaving?: boolean;
 }
 
 const JournalCard: React.FC<JournalCardProps> = ({
@@ -43,6 +46,9 @@ const JournalCard: React.FC<JournalCardProps> = ({
   setIsFullscreen,
   onExport,
   onExportOPML,
+  onPublish,
+  isPublished,
+  isSaving
 }) => {
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg animate-fade-in hover:shadow-xl transition-all duration-300 transform perspective-1000 border-gray-200">
@@ -56,6 +62,9 @@ const JournalCard: React.FC<JournalCardProps> = ({
           isFullscreen={false}
           onAddNewRootBullet={onAddNewRootBullet}
           onAddCollapsibleBullet={onAddCollapsibleBullet}
+          onPublish={onPublish}
+          isPublished={isPublished}
+          isSaving={isSaving}
         />
       </CardHeader>
       <CardContent className="p-5">

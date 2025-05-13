@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +12,8 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<JournalImage[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   // Update a bullet's content
@@ -292,10 +295,11 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
 
   // Add a collapsible section
   const addCollapsibleBullet = (parentId?: string) => {
-    const newParentId = uuidv4();
-    const childId = uuidv4();
-    
     if (!parentId) {
+      // Add a new root-level collapsible section
+      const newParentId = uuidv4();
+      const childId = uuidv4();
+      
       const newSection: BulletItemType = {
         id: newParentId,
         content: "New section",
@@ -313,128 +317,58 @@ export const useJournalState = (initialTitle: string = "My Journal") => {
       };
       
       setBullets([...bullets, newSection]);
-    } else {
-      const findBulletInfo = (
-        items: BulletItemType[],
-        targetId: string,
-        parentPath: string[] = []
-      ): { level: number; parentPath: string[] } | null => {
-        for (const item of items) {
-          if (item.id === targetId) {
-            return { level: item.level, parentPath };
-          }
-          
-          const result = findBulletInfo(item.children, targetId, [...parentPath, item.id]);
-          if (result) {
-            return result;
-          }
-        }
-        return null;
-      };
-      
-      const bulletInfo = findBulletInfo(bullets, parentId);
-      
-      if (bulletInfo && bulletInfo.parentPath.length > 0) {
-        const immediateParentId = bulletInfo.parentPath[bulletInfo.parentPath.length - 1];
-        
-        const nestedSection: BulletItemType = {
-          id: newParentId,
-          content: "New section",
-          level: bulletInfo.level,
-          isCollapsed: false,
-          children: [
-            {
-              id: childId,
-              content: "",
-              level: bulletInfo.level + 1,
-              isCollapsed: false,
-              children: [],
-            }
-          ]
-        };
-        
-        const addSiblingToParent = (
-          items: BulletItemType[],
-          targetParentId: string,
-          targetId: string,
-          newSection: BulletItemType
-        ): BulletItemType[] => {
-          return items.map(item => {
-            if (item.id === targetParentId) {
-              const targetIndex = item.children.findIndex(child => child.id === targetId);
-              
-              if (targetIndex !== -1) {
-                const newChildren = [...item.children];
-                newChildren.splice(targetIndex + 1, 0, newSection);
-                
-                return {
-                  ...item,
-                  children: newChildren,
-                  isCollapsed: false
-                };
-              }
-            }
-            
-            if (item.children.length > 0) {
-              return {
-                ...item,
-                children: addSiblingToParent(item.children, targetParentId, targetId, newSection)
-              };
-            }
-            
-            return item;
-          });
-        };
-        
-        setBullets(addSiblingToParent(bullets, immediateParentId, parentId, nestedSection));
-      } else {
-        const addNestedSectionToParent = (items: BulletItemType[]): BulletItemType[] => {
-          return items.map(item => {
-            if (item.id === parentId) {
-              const nestedSectionLevel = item.level + 1;
-              const nestedSection: BulletItemType = {
-                id: newParentId,
-                content: "New section",
-                level: nestedSectionLevel,
-                isCollapsed: false,
-                children: [
-                  {
-                    id: childId,
-                    content: "",
-                    level: nestedSectionLevel + 1,
-                    isCollapsed: false,
-                    children: [],
-                  }
-                ]
-              };
-              
-              return {
-                ...item,
-                children: [...item.children, nestedSection],
-                isCollapsed: false
-              };
-            }
-            
-            if (item.children.length > 0) {
-              return {
-                ...item,
-                children: addNestedSectionToParent(item.children)
-              };
-            }
-            
-            return item;
-          });
-        };
-
-        setBullets(addNestedSectionToParent(bullets));
-      }
-      
-      setCollapsedItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(parentId);
-        return newSet;
-      });
+      return;
     }
+    
+    // Add as a child of the specified parent
+    const addNestedSectionToParent = (items: BulletItemType[]): BulletItemType[] => {
+      return items.map(item => {
+        if (item.id === parentId) {
+          const newSectionId = uuidv4();
+          const newChildId = uuidv4();
+          
+          const newSection: BulletItemType = {
+            id: newSectionId,
+            content: "New section",
+            level: item.level + 1,
+            isCollapsed: false,
+            children: [
+              {
+                id: newChildId,
+                content: "",
+                level: item.level + 2,
+                isCollapsed: false,
+                children: [],
+              }
+            ]
+          };
+          
+          return {
+            ...item,
+            children: [...item.children, newSection],
+            isCollapsed: false
+          };
+        }
+        
+        if (item.children.length > 0) {
+          return {
+            ...item,
+            children: addNestedSectionToParent(item.children)
+          };
+        }
+        
+        return item;
+      });
+    };
+
+    setBullets(addNestedSectionToParent(bullets));
+    
+    // Ensure the parent is not collapsed
+    setCollapsedItems(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(parentId);
+      return newSet;
+    });
     
     toast({
       title: "Collapsible section created",
@@ -532,6 +466,7 @@ ${bullets.map(buildOutline).join('')}
   // Save journal to Supabase
   const saveJournal = async () => {
     try {
+      setIsSaving(true);
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -574,18 +509,22 @@ ${bullets.map(buildOutline).join('')}
         throw error;
       }
       
+      setIsPublished(true);
+      
       toast({
-        title: "Journal saved",
-        description: "Your journal has been saved successfully.",
+        title: "Journal published",
+        description: "Your journal has been published successfully.",
       });
       
     } catch (error) {
       console.error("Error saving journal:", error);
       toast({
-        title: "Failed to save",
-        description: "There was an error saving your journal.",
+        title: "Failed to publish",
+        description: "There was an error publishing your journal.",
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -606,6 +545,8 @@ ${bullets.map(buildOutline).join('')}
     images,
     isFullscreen,
     setIsFullscreen,
+    isPublished,
+    isSaving,
     handleUpdateBullet,
     handleAddChild,
     handleDeleteBullet,

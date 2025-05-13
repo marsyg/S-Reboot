@@ -1,1 +1,6 @@
+
 project_id = "podwnipoalxmikaoadvc"
+
+[storage]
+[storage.journal-images]
+public = true

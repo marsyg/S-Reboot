@@ -14,6 +14,8 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
     images,
     isFullscreen,
     setIsFullscreen,
+    isPublished,
+    isSaving,
     handleUpdateBullet,
     handleAddChild,
     handleDeleteBullet,
@@ -24,7 +26,8 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
     addNewRootBullet,
     addCollapsibleBullet,
     exportToJson,
-    exportToOPML
+    exportToOPML,
+    saveJournal
   } = useJournalState(initialTitle);
 
   return (
@@ -48,6 +51,9 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
           setIsFullscreen={setIsFullscreen}
           onExport={exportToJson}
           onExportOPML={exportToOPML}
+          onPublish={saveJournal}
+          isPublished={isPublished}
+          isSaving={isSaving}
         />
       )}
 
@@ -70,6 +76,9 @@ const Journal: React.FC<JournalProps> = ({ initialTitle = "My Journal" }) => {
           setIsFullscreen={setIsFullscreen}
           onExport={exportToJson}
           onExportOPML={exportToOPML}
+          onPublish={saveJournal}
+          isPublished={isPublished}
+          isSaving={isSaving}
         />
       </Dialog>
     </>
