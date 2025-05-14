@@ -55,7 +55,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
   const [showControls, setShowControls] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [imagePosition, setImagePosition] = useState<'left' | 'right' | 'center'>('center');
-  
+
   const handleChange = (e: React.FormEvent<HTMLElement>) => {
     onUpdate(id, e.currentTarget.innerHTML);
   };
@@ -116,13 +116,16 @@ const BulletItem: React.FC<BulletItemProps> = ({
     }
   };
 
-  const handleImageUpload = () => {
+  const handleImageUpload = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default to avoid losing focus
+    e.stopPropagation(); // Stop event from bubbling up
     fileInputRef.current?.click();
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onImageUpload(id, e.target.files[0]);
+      e.target.value = ''; // Reset the input to allow selecting the same file again
     }
   };
 
@@ -132,9 +135,9 @@ const BulletItem: React.FC<BulletItemProps> = ({
     }
   };
 
-  // FIX: Modified text formatting functions to properly apply formatting to the selection
   const toggleBold = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent the button from losing focus
+    e.preventDefault();
+    e.stopPropagation();
     document.execCommand('bold', false);
     if (contentRef.current) {
       contentRef.current.focus();
@@ -143,6 +146,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
 
   const toggleItalic = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     document.execCommand('italic', false);
     if (contentRef.current) {
       contentRef.current.focus();
@@ -151,13 +155,13 @@ const BulletItem: React.FC<BulletItemProps> = ({
 
   const toggleUnderline = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     document.execCommand('underline', false);
     if (contentRef.current) {
       contentRef.current.focus();
     }
   };
 
-  // Toggle image alignment
   const cycleImagePosition = (imageId: string) => {
     setImagePosition(prev => {
       const newPosition = prev === 'left' ? 'center' : prev === 'center' ? 'right' : 'left';
@@ -165,7 +169,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
     });
   };
 
-  // Image resize handlers
   const startResizing = (imageId: string, e: React.MouseEvent, width: number, height?: number) => {
     e.preventDefault();
     e.stopPropagation();
@@ -181,7 +184,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
     if (resizingImage && onImageResize) {
       e.preventDefault();
       
-      // Calculate new dimensions based on mouse movement
       const deltaX = e.clientX - initialMousePos.x;
       const newWidth = Math.max(50, initialSize.width + deltaX);
       
@@ -201,6 +203,9 @@ const BulletItem: React.FC<BulletItemProps> = ({
       document.removeEventListener('mouseup', stopResizing);
     };
   }, [resizingImage]);
+
+  // Filter images that belong to this bullet item
+  const bulletImages = images.filter(img => img.id.startsWith(id + "-"));
 
   return (
     <div 
@@ -273,13 +278,6 @@ const BulletItem: React.FC<BulletItemProps> = ({
                 >
                   <Image className="h-4 w-4" />
                 </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileInputChange}
-                />
               </div>
             )}
             
@@ -292,6 +290,16 @@ const BulletItem: React.FC<BulletItemProps> = ({
               onBlur={() => setIsEditing(false)}
               className="outline-none py-1 min-h-[1.5rem] break-words"
               tagName="div"
+            />
+
+            {/* File input hidden element */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileInputChange}
+              onClick={(e) => e.stopPropagation()}
             />
 
             {/* Add collapsible section button - appears only on hover of this specific bullet */}
@@ -318,10 +326,9 @@ const BulletItem: React.FC<BulletItemProps> = ({
           </div>
           
           {/* Display images attached to this bullet */}
-          <div className={`mt-3 ${imagePosition === 'left' ? 'float-left mr-4' : imagePosition === 'right' ? 'float-right ml-4' : 'flex justify-center'}`}>
-            {images
-              .filter(img => img.id.startsWith(id + "-"))
-              .map((img) => (
+          {bulletImages.length > 0 && (
+            <div className={`mt-3 ${imagePosition === 'left' ? 'float-left mr-4' : imagePosition === 'right' ? 'float-right ml-4' : 'flex justify-center'}`}>
+              {bulletImages.map((img) => (
                 <div 
                   key={img.id} 
                   className={cn(
@@ -378,7 +385,8 @@ const BulletItem: React.FC<BulletItemProps> = ({
                   </div>
                 </div>
               ))}
-          </div>
+            </div>
+          )}
           
           {/* Improved multilevel collapsible sections implementation */}
           {children.length > 0 && (

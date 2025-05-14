@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { List, ListTree } from "lucide-react";
+import { List, ListTree, Share, Loader2 } from "lucide-react";
 
 interface JournalToolbarProps {
   title: string;
@@ -18,6 +18,9 @@ interface JournalToolbarProps {
   isFullscreen: boolean;
   onAddNewRootBullet?: () => void;
   onAddCollapsibleBullet?: () => void;
+  onPublish?: () => void;
+  isPublished?: boolean;
+  isSaving?: boolean;
 }
 
 const JournalToolbar: React.FC<JournalToolbarProps> = ({
@@ -29,6 +32,9 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
   isFullscreen,
   onAddNewRootBullet,
   onAddCollapsibleBullet,
+  onPublish,
+  isPublished,
+  isSaving
 }) => {
   return (
     <div className="flex justify-between items-center">
@@ -65,6 +71,23 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
           >
             <ListTree className="h-4 w-4" />
             <span>Add Section</span>
+          </Button>
+        )}
+
+        {onPublish && (
+          <Button
+            variant={isPublished ? "outline" : "default"}
+            size="sm"
+            onClick={onPublish}
+            disabled={isSaving || isPublished}
+            className="flex items-center gap-1 hover:scale-105 transition-transform"
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Share className="h-4 w-4" />
+            )}
+            <span>{isPublished ? "Published" : isSaving ? "Publishing..." : "Publish"}</span>
           </Button>
         )}
 
