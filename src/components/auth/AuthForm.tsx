@@ -19,9 +19,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Special admin password
-  const ADMIN_PASSWORD = "Work_DONE100";
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -35,20 +32,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
         toast.success("Successfully logged in!");
         localStorage.setItem("user", JSON.stringify({ email, name: "User" }));
       } else {
-        // Check if using admin password
-        const isAdmin = password === ADMIN_PASSWORD;
-        
-        if (isAdmin) {
-          toast.success("Admin account created successfully!");
-        } else {
-          toast.success("Account created successfully!");
-        }
-        
+        toast.success("Account created successfully!");
         localStorage.setItem("user", JSON.stringify({ 
           email, 
           name,
-          username,
-          isAdmin
+          username
         }));
       }
       
@@ -140,11 +128,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
               placeholder="••••••••"
               required
             />
-            {mode === "signup" && (
-              <p className="text-xs text-gray-500">
-                Use "Work_DONE100" as password to create an admin account.
-              </p>
-            )}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">

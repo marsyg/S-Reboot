@@ -23,14 +23,11 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Special admin password
-  const ADMIN_PASSWORD = "Work_DONE100";
-
   useEffect(() => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/app");
+        navigate("/posts");
       }
     });
   }, [navigate]);
@@ -49,20 +46,8 @@ const Login = () => {
 
         if (error) throw error;
 
-        // Check if the user is admin and redirect accordingly
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user?.id)
-          .single();
-
         toast.success("Successfully logged in!");
-        
-        if (profileData?.role === 'admin') {
-          navigate("/app"); // Admins go to journal editing page
-        } else {
-          navigate("/posts"); // Regular users go to posts page
-        }
+        navigate("/posts");
       } else {
         // Handle signup - validate username first
         if (!username) {
@@ -80,9 +65,6 @@ const Login = () => {
           throw new Error("Username is already taken");
         }
 
-        // Check if using admin password to create admin account
-        const isAdmin = password === ADMIN_PASSWORD;
-
         // Proceed with signup
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -96,23 +78,8 @@ const Login = () => {
         });
 
         if (error) throw error;
-
-        // If using admin password, update the user's role to admin
-        if (isAdmin && data.user) {
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ role: 'admin' })
-            .eq('id', data.user.id);
-            
-          if (updateError) {
-            console.error("Failed to set admin role:", updateError);
-          }
-          
-          toast.success("Admin account created successfully! You can now login.");
-        } else {
-          toast.success("Account created successfully! You can now login.");
-        }
         
+        toast.success("Account created successfully! You can now login.");
         setMode("login");
       }
     } catch (error: any) {
@@ -219,11 +186,6 @@ const Login = () => {
                   required
                   className="border-gray-300"
                 />
-                {mode === "signup" && (
-                  <p className="text-xs text-gray-500">
-                    Use "Work_DONE100" as password to create an admin account.
-                  </p>
-                )}
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
@@ -245,8 +207,7 @@ const Login = () => {
               
               {mode === "login" && (
                 <div className="text-center w-full text-sm text-gray-500">
-                  <p>Demo accounts:</p>
-                  <p>Create one with password "Work_DONE100" for admin access</p>
+                  <p>To access the editor, login and use password "EDITOR"</p>
                 </div>
               )}
             </CardFooter>

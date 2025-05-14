@@ -129,8 +129,7 @@ const Posts = () => {
         .order("updated_at", { ascending: false });
         
       if (error) {
-        toast({
-          title: "Failed to load journals",
+        toast("Failed to load journals", {
           description: "Please try refreshing the page.",
           variant: "destructive"
         });
@@ -291,15 +290,13 @@ const Posts = () => {
             : journal
         ));
         
-        toast({
-          title: "Comment posted",
+        toast("Comment posted", {
           description: "Your comment has been added successfully."
         });
       }
     } catch (error: any) {
       console.error("Error posting comment:", error);
-      toast({
-        title: "Failed to post comment",
+      toast("Failed to post comment", {
         description: error.message || "Please try again later.",
         variant: "destructive"
       });
@@ -334,14 +331,12 @@ const Posts = () => {
         ));
       }
       
-      toast({
-        title: "Comment deleted",
+      toast("Comment deleted", {
         description: "Your comment has been deleted successfully."
       });
     } catch (error) {
       console.error("Error deleting comment:", error);
-      toast({
-        title: "Failed to delete comment",
+      toast("Failed to delete comment", {
         description: "There was an error deleting your comment.",
         variant: "destructive"
       });
@@ -376,8 +371,18 @@ const Posts = () => {
         </div>
         <div className="flex gap-2">
           {isAdmin && (
-            <Button variant="default" onClick={() => navigate('/app')}>
-              Admin Dashboard
+            <Button variant="default" onClick={() => {
+              const editorPassword = prompt("Enter editor password to access the journal editor:");
+              if (editorPassword === "EDITOR") {
+                navigate('/app');
+              } else {
+                toast("Access Denied", {
+                  description: "Incorrect editor password.",
+                  variant: "destructive"
+                });
+              }
+            }}>
+              Editor Dashboard
             </Button>
           )}
           <Button variant="outline" onClick={() => supabase.auth.signOut()}>
@@ -391,7 +396,19 @@ const Posts = () => {
           <div className="text-center py-10">
             <p className="text-gray-500 mb-4">No published journals found.</p>
             {isAdmin && (
-              <Button onClick={() => navigate('/app')}>Create Your First Journal</Button>
+              <Button onClick={() => {
+                const editorPassword = prompt("Enter editor password to access the journal editor:");
+                if (editorPassword === "EDITOR") {
+                  navigate('/app');
+                } else {
+                  toast("Access Denied", {
+                    description: "Incorrect editor password.",
+                    variant: "destructive"
+                  });
+                }
+              }}>
+                Create Your First Journal
+              </Button>
             )}
           </div>
         ) : (
