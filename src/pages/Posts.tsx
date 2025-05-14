@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import JournalView from "@/components/journal/JournalView";
 import { Loader2, MessageCircle, Heart } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 
 interface JournalPost {
   id: string;
@@ -20,6 +21,7 @@ interface JournalPost {
   created_at: string;
   updated_at: string;
   username?: string;
+  full_name?: string;
   likes?: number;
   comments?: number;
 }
@@ -31,11 +33,12 @@ interface Comment {
   content: string;
   created_at: string;
   username?: string;
+  full_name?: string;
 }
 
 const Posts = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: useToastNotification } = useToast();
   const [journals, setJournals] = useState<JournalPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -54,6 +57,7 @@ const Posts = () => {
         return;
       }
       setUser(session.user);
+      console.log("Current user:", session.user);
     };
     
     checkAuth();
@@ -90,27 +94,27 @@ const Posts = () => {
         .order("updated_at", { ascending: false });
         
       if (error) {
-        toast({
-          title: "Failed to load journals",
-          description: "Please try refreshing the page.",
-          variant: "destructive"
-        });
+        toast.error("Failed to load journals. Please try refreshing the page.");
+        console.error("Error loading journals:", error);
         return;
       }
       
-      // Load usernames for journal authors
+      // Load usernames and full names for journal authors
       const userIds = [...new Set(data.map((journal: any) => journal.user_id))];
-      let usernamesMap: Record<string, string> = {};
+      let usersMap: Record<string, { username?: string, full_name?: string }> = {};
       
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, username")
+          .select("id, username, full_name")
           .in("id", userIds);
           
         if (profiles) {
-          usernamesMap = profiles.reduce((acc: Record<string, string>, profile: any) => {
-            acc[profile.id] = profile.username || "Anonymous";
+          usersMap = profiles.reduce((acc: Record<string, any>, profile: any) => {
+            acc[profile.id] = {
+              username: profile.username || "Anonymous",
+              full_name: profile.full_name || "Anonymous User"
+            };
             return acc;
           }, {});
         }
@@ -138,7 +142,8 @@ const Posts = () => {
       // Format journals with additional data
       const formattedJournals = data.map((journal: any) => ({
         ...journal,
-        username: usernamesMap[journal.user_id] || "Anonymous",
+        username: usersMap[journal.user_id]?.username || "Anonymous",
+        full_name: usersMap[journal.user_id]?.full_name || "Anonymous User",
         likes: Math.floor(Math.random() * 50), // Placeholder for demo
         comments: commentsCountMap[journal.id] || 0,
       }));
@@ -164,30 +169,34 @@ const Posts = () => {
         return;
       }
       
-      // Get usernames for comments
+      // Get usernames and full names for comments
       const userIds = [...new Set(data.map(comment => comment.user_id))];
-      let usernamesMap: Record<string, string> = {};
+      let usersMap: Record<string, { username?: string, full_name?: string }> = {};
       
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, username")
+          .select("id, username, full_name")
           .in("id", userIds);
           
         if (profiles) {
-          usernamesMap = profiles.reduce((acc: Record<string, string>, profile: any) => {
-            acc[profile.id] = profile.username || "Anonymous";
+          usersMap = profiles.reduce((acc: Record<string, any>, profile: any) => {
+            acc[profile.id] = {
+              username: profile.username || "Anonymous",
+              full_name: profile.full_name || "Anonymous User"
+            };
             return acc;
           }, {});
         }
       }
       
-      const commentsWithUsernames = data.map(comment => ({
+      const commentsWithUserInfo = data.map(comment => ({
         ...comment,
-        username: usernamesMap[comment.user_id] || "Anonymous"
+        username: usersMap[comment.user_id]?.username || "Anonymous",
+        full_name: usersMap[comment.user_id]?.full_name || "Anonymous User"
       }));
       
-      setComments(commentsWithUsernames);
+      setComments(commentsWithUserInfo);
     } catch (error) {
       console.error("Failed to load comments:", error);
     }
@@ -213,9 +222,14 @@ const Posts = () => {
       if (error) throw error;
       
       if (data && data.length > 0) {
+        // Get user's full name from metadata
+        const full_name = user.user_metadata?.full_name || "Anonymous User";
+        const username = user.user_metadata?.username || "Anonymous";
+        
         const newCommentObj = {
           ...data[0],
-          username: user.user_metadata?.username || "Anonymous"
+          username,
+          full_name
         } as Comment;
         
         setComments([newCommentObj, ...comments]);
@@ -228,18 +242,11 @@ const Posts = () => {
             : journal
         ));
         
-        toast({
-          title: "Comment posted",
-          description: "Your comment has been added successfully."
-        });
+        toast.success("Your comment has been added successfully.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error posting comment:", error);
-      toast({
-        title: "Failed to post comment",
-        description: "Please try again later.",
-        variant: "destructive"
-      });
+      toast.error("Failed to post comment. Please try again later.");
     } finally {
       setIsCommenting(false);
     }
@@ -271,17 +278,20 @@ const Posts = () => {
         ));
       }
       
-      toast({
-        title: "Comment deleted",
-        description: "Your comment has been deleted successfully."
-      });
-    } catch (error) {
+      toast.success("Your comment has been deleted successfully.");
+    } catch (error: any) {
       console.error("Error deleting comment:", error);
-      toast({
-        title: "Failed to delete comment",
-        description: "There was an error deleting your comment.",
-        variant: "destructive"
-      });
+      toast.error("Failed to delete comment. There was an error.");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error: any) {
+      toast.error("Failed to log out. Please try again.");
     }
   };
 
@@ -311,9 +321,14 @@ const Posts = () => {
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Published Journals</h1>
           <p className="text-gray-600">Read and comment on community journals</p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/app')}>
-          Back to My Journals
-        </Button>
+        <div className="flex gap-4">
+          <Button variant="outline" onClick={() => navigate('/app')}>
+            Back to My Journals
+          </Button>
+          <Button variant="destructive" onClick={handleLogout}>
+            Logout
+          </Button>
+        </div>
       </header>
       
       <div className="max-w-7xl mx-auto">
@@ -334,9 +349,9 @@ const Posts = () => {
                   <CardTitle className="text-lg">{journal.title}</CardTitle>
                   <div className="text-sm text-gray-500 flex items-center">
                     <Avatar className="h-5 w-5 mr-1">
-                      <AvatarFallback>{journal.username?.charAt(0) || 'U'}</AvatarFallback>
+                      <AvatarFallback>{journal.full_name?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
-                    <span>{journal.username}</span>
+                    <span>{journal.full_name || journal.username}</span>
                   </div>
                 </CardHeader>
                 <CardContent className="text-sm text-gray-500">
@@ -373,7 +388,7 @@ const Posts = () => {
                     <div>
                       <h2 className="text-2xl font-semibold">{viewingJournal.title}</h2>
                       <p className="text-sm text-gray-500">
-                        By {viewingJournal.username} · {formatDate(viewingJournal.created_at)}
+                        By {viewingJournal.full_name || viewingJournal.username} · {formatDate(viewingJournal.created_at)}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -442,10 +457,10 @@ const Posts = () => {
                                 <div className="flex justify-between items-start mb-2">
                                   <div className="flex items-center">
                                     <Avatar className="h-8 w-8 mr-2">
-                                      <AvatarFallback>{comment.username?.substring(0, 2) || 'U'}</AvatarFallback>
+                                      <AvatarFallback>{(comment.full_name || comment.username)?.substring(0, 2) || 'U'}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <p className="font-medium">{comment.username || 'User'}</p>
+                                      <p className="font-medium">{comment.full_name || comment.username}</p>
                                       <p className="text-xs text-gray-500">{formatDate(comment.created_at)}</p>
                                     </div>
                                   </div>

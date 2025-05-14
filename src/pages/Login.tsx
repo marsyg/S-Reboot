@@ -60,11 +60,18 @@ const Login = () => {
         });
 
         if (error) throw error;
-
-        toast.success("Account created successfully!");
-        navigate("/app");
+        
+        // Check if email confirmation is required
+        if (data?.user?.identities?.length === 0) {
+          toast.success("Please check your email for the confirmation link");
+        } else {
+          // If email confirmation not required, user is created
+          toast.success("Account created successfully!");
+          navigate("/app");
+        }
       }
     } catch (error: any) {
+      console.error("Authentication error:", error);
       toast.error(error.error_description || error.message || "Authentication failed");
     } finally {
       setIsLoading(false);
