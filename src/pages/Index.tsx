@@ -43,7 +43,6 @@ const Index = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isCommenting, setIsCommenting] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   
   useEffect(() => {
     // Check authentication and load journals
@@ -56,22 +55,6 @@ const Index = () => {
       }
       
       setUser(session.user);
-      
-      // Check if user is admin
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-        
-      const userIsAdmin = profileData?.role === 'admin';
-      setIsAdmin(userIsAdmin);
-      
-      // If not admin, redirect to posts page
-      if (!userIsAdmin) {
-        navigate("/posts");
-        return;
-      }
       
       // Load journals from Supabase
       await loadJournals();
@@ -378,8 +361,8 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <header className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Flowy Scribe Admin</h1>
-          <p className="text-gray-600">Manage your journals and publications</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Flowy Scribe</h1>
+          <p className="text-gray-600">Your nested journaling workspace</p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -388,7 +371,7 @@ const Index = () => {
             onClick={() => navigate('/posts')}
           >
             <BookOpen className="h-4 w-4" />
-            <span>View Published Posts</span>
+            <span>Browse Posts</span>
           </Button>
           <Button variant="outline" onClick={() => supabase.auth.signOut()}>
             Log Out

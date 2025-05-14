@@ -2,14 +2,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/sonner";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import JournalView from "@/components/journal/JournalView";
-import { Loader2, MessageCircle, Heart, BookOpen } from "lucide-react";
+import { Loader2, MessageCircle, Heart } from "lucide-react";
 
 interface JournalPost {
   id: string;
@@ -34,10 +35,10 @@ interface Comment {
 
 const Posts = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [journals, setJournals] = useState<JournalPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [viewingJournal, setViewingJournal] = useState<JournalPost | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -53,24 +54,6 @@ const Posts = () => {
         return;
       }
       setUser(session.user);
-      
-      // Check if user is admin
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role, username')
-        .eq('id', session.user.id)
-        .single();
-        
-      setIsAdmin(profileData?.role === 'admin');
-      
-      // Store username in user object for comment creation
-      if (session.user && profileData) {
-        session.user.user_metadata = {
-          ...session.user.user_metadata,
-          username: profileData.username
-        };
-        setUser(session.user);
-      }
     };
     
     checkAuth();
@@ -82,28 +65,6 @@ const Posts = () => {
         navigate("/login");
       } else if (session) {
         setUser(session.user);
-        
-        // Check admin status on auth change
-        const fetchUserProfile = async () => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('role, username')
-            .eq('id', session.user.id)
-            .single();
-            
-          setIsAdmin(profileData?.role === 'admin');
-          
-          // Store username in user object for comment creation
-          if (session.user && profileData) {
-            session.user.user_metadata = {
-              ...session.user.user_metadata,
-              username: profileData.username
-            };
-            setUser(session.user);
-          }
-        };
-        
-        fetchUserProfile();
       }
     });
     
@@ -129,7 +90,8 @@ const Posts = () => {
         .order("updated_at", { ascending: false });
         
       if (error) {
-        toast("Failed to load journals", {
+        toast({
+          title: "Failed to load journals",
           description: "Please try refreshing the page.",
           variant: "destructive"
         });
@@ -237,48 +199,24 @@ const Posts = () => {
     setIsCommenting(true);
     
     try {
-      // Create the comment data
       const commentData = {
         journal_id: viewingJournal.id,
         user_id: user.id,
         content: newComment.trim()
       };
       
-      console.log("Posting comment with data:", commentData);
-      
       const { data, error } = await supabase
         .from("comments")
         .insert(commentData)
         .select();
         
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
-      }
-      
-      console.log("Comment posted, response:", data);
+      if (error) throw error;
       
       if (data && data.length > 0) {
-        // Get username from user metadata or fetch it again if needed
-        let username = user.user_metadata?.username;
-        
-        // If username not available in metadata, fetch from profiles
-        if (!username) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', user.id)
-            .single();
-            
-          username = profileData?.username || "Anonymous";
-        }
-        
         const newCommentObj = {
           ...data[0],
-          username: username
+          username: user.user_metadata?.username || "Anonymous"
         } as Comment;
-        
-        console.log("Adding comment to UI:", newCommentObj);
         
         setComments([newCommentObj, ...comments]);
         setNewComment("");
@@ -290,14 +228,16 @@ const Posts = () => {
             : journal
         ));
         
-        toast("Comment posted", {
+        toast({
+          title: "Comment posted",
           description: "Your comment has been added successfully."
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error posting comment:", error);
-      toast("Failed to post comment", {
-        description: error.message || "Please try again later.",
+      toast({
+        title: "Failed to post comment",
+        description: "Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -326,17 +266,19 @@ const Posts = () => {
       if (viewingJournal) {
         setJournals(journals.map(journal => 
           journal.id === viewingJournal.id 
-            ? { ...journal, comments: Math.max((journal.comments || 0) - 1, 0) } 
+            ? { ...journal, comments: (journal.comments || 0) - 1 } 
             : journal
         ));
       }
       
-      toast("Comment deleted", {
+      toast({
+        title: "Comment deleted",
         description: "Your comment has been deleted successfully."
       });
     } catch (error) {
       console.error("Error deleting comment:", error);
-      toast("Failed to delete comment", {
+      toast({
+        title: "Failed to delete comment",
         description: "There was an error deleting your comment.",
         variant: "destructive"
       });
@@ -369,47 +311,16 @@ const Posts = () => {
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Published Journals</h1>
           <p className="text-gray-600">Read and comment on community journals</p>
         </div>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <Button variant="default" onClick={() => {
-              const editorPassword = prompt("Enter editor password to access the journal editor:");
-              if (editorPassword === "EDITOR") {
-                navigate('/app');
-              } else {
-                toast("Access Denied", {
-                  description: "Incorrect editor password.",
-                  variant: "destructive"
-                });
-              }
-            }}>
-              Editor Dashboard
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => supabase.auth.signOut()}>
-            Log Out
-          </Button>
-        </div>
+        <Button variant="outline" onClick={() => navigate('/app')}>
+          Back to My Journals
+        </Button>
       </header>
       
       <div className="max-w-7xl mx-auto">
         {journals.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-gray-500 mb-4">No published journals found.</p>
-            {isAdmin && (
-              <Button onClick={() => {
-                const editorPassword = prompt("Enter editor password to access the journal editor:");
-                if (editorPassword === "EDITOR") {
-                  navigate('/app');
-                } else {
-                  toast("Access Denied", {
-                    description: "Incorrect editor password.",
-                    variant: "destructive"
-                  });
-                }
-              }}>
-                Create Your First Journal
-              </Button>
-            )}
+            <Button onClick={() => navigate('/app')}>Create Your First Journal</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -16,7 +16,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,12 +31,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
         toast.success("Successfully logged in!");
         localStorage.setItem("user", JSON.stringify({ email, name: "User" }));
       } else {
+        // Simulate signup success
         toast.success("Account created successfully!");
-        localStorage.setItem("user", JSON.stringify({ 
-          email, 
-          name,
-          username
-        }));
+        localStorage.setItem("user", JSON.stringify({ email, name }));
       }
       
       if (onSuccess) {
@@ -55,7 +51,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     setEmail("");
     setPassword("");
     setName("");
-    setUsername("");
   };
 
   return (
@@ -71,37 +66,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           {mode === "signup" && (
-            <>
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Name
-                </label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="John Doe"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="username" className="text-sm font-medium">
-                  Username
-                </label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
-                  placeholder="johndoe"
-                  required
-                />
-                <p className="text-xs text-gray-500">
-                  This will be displayed with your comments and posts.
-                </p>
-              </div>
-            </>
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium">
+                Name
+              </label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                required
+              />
+            </div>
           )}
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">

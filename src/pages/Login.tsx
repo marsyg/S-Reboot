@@ -20,14 +20,13 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/posts");
+        navigate("/app");
       }
     });
   }, [navigate]);
@@ -47,40 +46,23 @@ const Login = () => {
         if (error) throw error;
 
         toast.success("Successfully logged in!");
-        navigate("/posts");
+        navigate("/app");
       } else {
-        // Handle signup - validate username first
-        if (!username) {
-          throw new Error("Username is required");
-        }
-        
-        // Check if username is already taken
-        const { data: existingUser, error: usernameError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('username', username)
-          .maybeSingle();
-          
-        if (existingUser) {
-          throw new Error("Username is already taken");
-        }
-
-        // Proceed with signup
+        // Handle signup
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               full_name: name,
-              username: username,
             }
           }
         });
 
         if (error) throw error;
-        
-        toast.success("Account created successfully! You can now login.");
-        setMode("login");
+
+        toast.success("Account created successfully!");
+        navigate("/app");
       }
     } catch (error: any) {
       toast.error(error.error_description || error.message || "Authentication failed");
@@ -94,7 +76,6 @@ const Login = () => {
     setEmail("");
     setPassword("");
     setName("");
-    setUsername("");
   };
 
   return (
@@ -118,39 +99,20 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               {mode === "signup" && (
-                <>
-                  <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">
-                      Full Name
-                    </label>
-                    <Input
-                      id="name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="John Doe"
-                      required
-                      className="border-gray-300"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="username" className="text-sm font-medium">
-                      Username
-                    </label>
-                    <Input
-                      id="username"
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
-                      placeholder="johndoe"
-                      required
-                      className="border-gray-300"
-                    />
-                    <p className="text-xs text-gray-500">
-                      This will be displayed with your comments and posts.
-                    </p>
-                  </div>
-                </>
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    Full Name
+                  </label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                    required
+                    className="border-gray-300"
+                  />
+                </div>
               )}
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
@@ -204,12 +166,6 @@ const Login = () => {
                   ? "Don't have an account? Sign up"
                   : "Already have an account? Log in"}
               </Button>
-              
-              {mode === "login" && (
-                <div className="text-center w-full text-sm text-gray-500">
-                  <p>To access the editor, login and use password "EDITOR"</p>
-                </div>
-              )}
             </CardFooter>
           </form>
         </Card>
