@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import JournalView from "@/components/journal/JournalView";
-import { Loader2, MessageCircle, Heart } from "lucide-react";
+import { Loader2, MessageCircle, Heart, BookOpen } from "lucide-react";
 
 interface JournalPost {
   id: string;
@@ -39,6 +39,7 @@ const Posts = () => {
   const [journals, setJournals] = useState<JournalPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [viewingJournal, setViewingJournal] = useState<JournalPost | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -54,6 +55,15 @@ const Posts = () => {
         return;
       }
       setUser(session.user);
+      
+      // Check if user is admin
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+        
+      setIsAdmin(profileData?.role === 'admin');
     };
     
     checkAuth();
@@ -311,16 +321,25 @@ const Posts = () => {
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Published Journals</h1>
           <p className="text-gray-600">Read and comment on community journals</p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/app')}>
-          Back to My Journals
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <Button variant="default" onClick={() => navigate('/app')}>
+              Admin Dashboard
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => supabase.auth.signOut()}>
+            Log Out
+          </Button>
+        </div>
       </header>
       
       <div className="max-w-7xl mx-auto">
         {journals.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-gray-500 mb-4">No published journals found.</p>
-            <Button onClick={() => navigate('/app')}>Create Your First Journal</Button>
+            {isAdmin && (
+              <Button onClick={() => navigate('/app')}>Create Your First Journal</Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

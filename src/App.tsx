@@ -14,25 +14,57 @@ import Posts from "./pages/Posts";
 
 const queryClient = new QueryClient();
 
-// Auth guard component
-const AuthRoute = ({ element }: { element: React.ReactNode }) => {
+// Auth guard component with role checking
+const AuthRoute = ({ element, requireAdmin = false }: { element: React.ReactNode, requireAdmin?: boolean }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setIsAuthenticated(!!session);
+      async (event, session) => {
+        const authenticated = !!session;
+        setIsAuthenticated(authenticated);
+        
+        // Check if user is admin
+        if (authenticated && session?.user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+            
+          setIsAdmin(data?.role === 'admin');
+        } else {
+          setIsAdmin(false);
+        }
+        
         setIsLoading(false);
       }
     );
     
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authenticated = !!session;
+      setIsAuthenticated(authenticated);
+      
+      // Check if user is admin
+      if (authenticated && session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+          
+        setIsAdmin(data?.role === 'admin');
+      }
+      
       setIsLoading(false);
-    });
+    };
+    
+    checkSession();
     
     return () => subscription.unsubscribe();
   }, []);
@@ -46,26 +78,54 @@ const AuthRoute = ({ element }: { element: React.ReactNode }) => {
     );
   }
   
-  return isAuthenticated ? element : <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/posts" />;
+  }
+  
+  return element;
 };
 
 // Public route guard (redirects to app if logged in)
 const PublicRoute = ({ element }: { element: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authenticated = !!session;
+      setIsAuthenticated(authenticated);
+      
+      if (authenticated && session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+          
+        setIsAdmin(data?.role === 'admin');
+      }
+      
       setIsLoading(false);
-    });
+    };
+    
+    checkSession();
   }, []);
   
   if (isLoading) {
     return null;
   }
   
-  return !isAuthenticated ? element : <Navigate to="/app" />;
+  if (isAuthenticated) {
+    return <Navigate to={isAdmin ? "/app" : "/posts"} />;
+  }
+  
+  return element;
 };
 
 const App = () => (
@@ -76,8 +136,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/app" element={<AuthRoute element={<Index />} />} />
+          <Route path="/login" element={<PublicRoute element={<Login />} />} />
+          <Route path="/app" element={<AuthRoute element={<Index />} requireAdmin={true} />} />
           <Route path="/posts" element={<AuthRoute element={<Posts />} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
