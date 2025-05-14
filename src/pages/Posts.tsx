@@ -2,12 +2,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import JournalView from "@/components/journal/JournalView";
 import { Loader2, MessageCircle, Heart, BookOpen } from "lucide-react";
@@ -35,7 +34,6 @@ interface Comment {
 
 const Posts = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [journals, setJournals] = useState<JournalPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -59,11 +57,20 @@ const Posts = () => {
       // Check if user is admin
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, username')
         .eq('id', session.user.id)
         .single();
         
       setIsAdmin(profileData?.role === 'admin');
+      
+      // Store username in user object for comment creation
+      if (session.user && profileData) {
+        session.user.user_metadata = {
+          ...session.user.user_metadata,
+          username: profileData.username
+        };
+        setUser(session.user);
+      }
     };
     
     checkAuth();
@@ -75,6 +82,28 @@ const Posts = () => {
         navigate("/login");
       } else if (session) {
         setUser(session.user);
+        
+        // Check admin status on auth change
+        const fetchUserProfile = async () => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('role, username')
+            .eq('id', session.user.id)
+            .single();
+            
+          setIsAdmin(profileData?.role === 'admin');
+          
+          // Store username in user object for comment creation
+          if (session.user && profileData) {
+            session.user.user_metadata = {
+              ...session.user.user_metadata,
+              username: profileData.username
+            };
+            setUser(session.user);
+          }
+        };
+        
+        fetchUserProfile();
       }
     });
     
@@ -209,24 +238,48 @@ const Posts = () => {
     setIsCommenting(true);
     
     try {
+      // Create the comment data
       const commentData = {
         journal_id: viewingJournal.id,
         user_id: user.id,
         content: newComment.trim()
       };
       
+      console.log("Posting comment with data:", commentData);
+      
       const { data, error } = await supabase
         .from("comments")
         .insert(commentData)
         .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+      
+      console.log("Comment posted, response:", data);
       
       if (data && data.length > 0) {
+        // Get username from user metadata or fetch it again if needed
+        let username = user.user_metadata?.username;
+        
+        // If username not available in metadata, fetch from profiles
+        if (!username) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', user.id)
+            .single();
+            
+          username = profileData?.username || "Anonymous";
+        }
+        
         const newCommentObj = {
           ...data[0],
-          username: user.user_metadata?.username || "Anonymous"
+          username: username
         } as Comment;
+        
+        console.log("Adding comment to UI:", newCommentObj);
         
         setComments([newCommentObj, ...comments]);
         setNewComment("");
@@ -243,11 +296,11 @@ const Posts = () => {
           description: "Your comment has been added successfully."
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error posting comment:", error);
       toast({
         title: "Failed to post comment",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -276,7 +329,7 @@ const Posts = () => {
       if (viewingJournal) {
         setJournals(journals.map(journal => 
           journal.id === viewingJournal.id 
-            ? { ...journal, comments: (journal.comments || 0) - 1 } 
+            ? { ...journal, comments: Math.max((journal.comments || 0) - 1, 0) } 
             : journal
         ));
       }

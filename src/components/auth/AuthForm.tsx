@@ -16,7 +16,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Special admin password
+  const ADMIN_PASSWORD = "Work_DONE100";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,9 +35,21 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
         toast.success("Successfully logged in!");
         localStorage.setItem("user", JSON.stringify({ email, name: "User" }));
       } else {
-        // Simulate signup success
-        toast.success("Account created successfully!");
-        localStorage.setItem("user", JSON.stringify({ email, name }));
+        // Check if using admin password
+        const isAdmin = password === ADMIN_PASSWORD;
+        
+        if (isAdmin) {
+          toast.success("Admin account created successfully!");
+        } else {
+          toast.success("Account created successfully!");
+        }
+        
+        localStorage.setItem("user", JSON.stringify({ 
+          email, 
+          name,
+          username,
+          isAdmin
+        }));
       }
       
       if (onSuccess) {
@@ -51,6 +67,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     setEmail("");
     setPassword("");
     setName("");
+    setUsername("");
   };
 
   return (
@@ -66,19 +83,37 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           {mode === "signup" && (
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Name
-              </label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
-                required
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Name
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-medium">
+                  Username
+                </label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
+                  placeholder="johndoe"
+                  required
+                />
+                <p className="text-xs text-gray-500">
+                  This will be displayed with your comments and posts.
+                </p>
+              </div>
+            </>
           )}
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
@@ -105,6 +140,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
               placeholder="••••••••"
               required
             />
+            {mode === "signup" && (
+              <p className="text-xs text-gray-500">
+                Use "Work_DONE100" as password to create an admin account.
+              </p>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
