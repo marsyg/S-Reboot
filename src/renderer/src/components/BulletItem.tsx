@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ChevronDown, ChevronRight, Image, Bold, Italic, Underline, ListTree, X, Maximize } from "lucide-react";
 import { cn } from "../lib/utils";
 import ContentEditable from "react-contenteditable";
-import { JournalImage } from "../types/journal";
+import { JournalImage, JournalVideo } from "../types/journal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "../components/ui/collapsible";
 import { Dialog, DialogContent } from "../components/ui/dialog";
@@ -20,9 +20,14 @@ export interface BulletItemProps {
   onToggleCollapse: (id: string) => void;
   isCollapsed: boolean;
   onImageUpload: (id: string, file: File) => void;
+  onVideoUpload: (id: string, file: File) => void;
+  onDeleteImage?: (imageId: string, imageUrl: string) => void;
+  onDeleteVideo?: (videoId: string, videoUrl: string) => void;
   images: JournalImage[];
-  onImageResize?: (imageId: string, width: number, height?: number) => void;
+  videos: JournalVideo[];
+  onImageResize?: (imageId: string, width: number, height?: number, top?: number, left?: number) => void;
   onAddCollapsibleBullet?: (parentId: string) => void;
+  onOutdent?: (id: string) => void;
 }
 
 const BulletItem: React.FC<BulletItemProps> = ({
@@ -37,23 +42,44 @@ const BulletItem: React.FC<BulletItemProps> = ({
   onToggleCollapse,
   isCollapsed,
   onImageUpload,
+  onVideoUpload,
+  onDeleteImage,
+  onDeleteVideo,
   images,
+  videos = [],
   onImageResize,
-  onAddCollapsibleBullet
+  onAddCollapsibleBullet,
+  onOutdent,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const contentRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   
   // Image resize related state
-  const [resizingImage, setResizingImage] = useState<string | null>(null);
+  const [resizingMedia, setResizingMedia] = useState<{id: string, type: 'image' | 'video'} | null>(null);
   const [initialMousePos, setInitialMousePos] = useState({ x: 0, y: 0 });
   const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
   
   const [showControls, setShowControls] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [imagePosition, setImagePosition] = useState<'left' | 'right' | 'center'>('center');
+  interface MediaPreview {
+    url: string;
+    id: string;
+  }
+
+  const [previewImage, setPreviewImage] = useState<MediaPreview | null>(null);
+  const [previewVideo, setPreviewVideo] = useState<MediaPreview | null>(null);
+  const [imagePosition, setImagePosition] = useState<'left' | 'right' | 'center'>(() => {
+    // Initialize position based on saved left value
+    const image = images.find(img => img.id === id);
+    if (image) {
+      if (image.left === 0) return 'left';
+      if (image.left === 100) return 'right';
+      return 'center';
+    }
+    return 'center';
+  });
 
   const handleChange = (e: React.FormEvent<HTMLElement>) => {
     const newContent = e.currentTarget.innerHTML;
@@ -64,9 +90,18 @@ const BulletItem: React.FC<BulletItemProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape" && previewImage) {
+    if (e.key === "Escape") {
       e.preventDefault();
-      setPreviewImage(null);
+      if (previewImage) {
+        setPreviewImage(null);
+      } else if (previewVideo) {
+        setPreviewVideo(null);
+      } else if (isEditing) {
+        setIsEditing(false);
+        if (contentRef.current) {
+          contentRef.current.blur();
+        }
+      }
       return;
     }
 
@@ -100,7 +135,12 @@ const BulletItem: React.FC<BulletItemProps> = ({
       });
     } else if (e.key === "Tab") {
       e.preventDefault();
-      if (!e.shiftKey) {
+      if (e.shiftKey) {
+        // Handle outdenting (Shift+Tab)
+        if (level > 0 && onOutdent) {
+          onOutdent(id);
+        }
+      } else {
         onAddChild(id);
       }
     } else if (e.key === "Backspace") {
@@ -119,6 +159,8 @@ const BulletItem: React.FC<BulletItemProps> = ({
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && previewImage) {
         setPreviewImage(null);
+      } else if (e.key === "Escape" && previewVideo) {
+        setPreviewVideo(null);
       }
     };
 
@@ -126,7 +168,7 @@ const BulletItem: React.FC<BulletItemProps> = ({
     return () => {
       document.removeEventListener("keydown", handleEscKey);
     };
-  }, [previewImage]);
+  }, [previewImage, previewVideo]);
 
   // Add effect to handle content updates
   useEffect(() => {
@@ -191,6 +233,19 @@ const BulletItem: React.FC<BulletItemProps> = ({
     }
   };
 
+  const handleVideoUpload = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    videoInputRef.current?.click();
+  };
+
+  const handleVideoFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      onVideoUpload(id, e.target.files[0]);
+      e.target.value = ''; // Reset the input
+    }
+  };
+
   const handleAddCollapsibleSection = () => {
     if (onAddCollapsibleBullet) {
       onAddCollapsibleBullet(id);
@@ -224,17 +279,40 @@ const BulletItem: React.FC<BulletItemProps> = ({
     }
   };
 
-  const cycleImagePosition = (imageId: string) => {
-    setImagePosition(prev => {
-      const newPosition = prev === 'left' ? 'center' : prev === 'center' ? 'right' : 'left';
-      return newPosition;
-    });
+  const handleImagePositionChange = (imageId: string, newPosition: 'left' | 'right' | 'center') => {
+    setImagePosition(newPosition);
+    // Find the image and update its position
+    const image = images.find(img => img.id === imageId);
+    if (image && onImageResize) {
+      // Update the image's position by setting top/left values
+      let top = image.top || 0;
+      let left = 0;
+      
+      switch (newPosition) {
+        case 'left':
+          left = 0;
+          break;
+        case 'right':
+          left = 100;
+          break;
+        case 'center':
+          left = 50;
+          break;
+      }
+      
+      onImageResize(imageId, image.width, image.height, top, left);
+    }
   };
 
-  const startResizing = (imageId: string, e: React.MouseEvent, width: number, height?: number) => {
+  const cycleImagePosition = (imageId: string) => {
+    const newPosition = imagePosition === 'left' ? 'center' : imagePosition === 'center' ? 'right' : 'left';
+    handleImagePositionChange(imageId, newPosition);
+  };
+
+  const startResizing = (mediaId: string, type: 'image' | 'video', e: React.MouseEvent, width: number, height?: number) => {
     e.preventDefault();
     e.stopPropagation();
-    setResizingImage(imageId);
+    setResizingMedia({ id: mediaId, type });
     setInitialMousePos({ x: e.clientX, y: e.clientY });
     setInitialSize({ width, height: height || width });
     
@@ -243,18 +321,38 @@ const BulletItem: React.FC<BulletItemProps> = ({
   };
   
   const handleResizeMove = (e: MouseEvent) => {
-    if (resizingImage && onImageResize) {
-      e.preventDefault();
-      
-      const deltaX = e.clientX - initialMousePos.x;
-      const newWidth = Math.max(50, initialSize.width + deltaX);
-      
-      onImageResize(resizingImage, newWidth);
+    if (!resizingMedia) return;
+    
+    e.preventDefault();
+    
+    const deltaX = e.clientX - initialMousePos.x;
+    const deltaY = e.clientY - initialMousePos.y;
+    
+    let newWidth = Math.max(100, initialSize.width + deltaX);
+    let newHeight: number | undefined;
+    
+    if (e.shiftKey) {
+      // Maintain aspect ratio if shift is held
+      const aspectRatio = initialSize.height / initialSize.width;
+      newHeight = newWidth * aspectRatio;
+    } else {
+      newHeight = initialSize.height + deltaY;
+    }
+    
+    if (resizingMedia.type === 'image' && onImageResize) {
+      onImageResize(resizingMedia.id, newWidth, newHeight);
+    } else if (resizingMedia.type === 'video') {
+      // Find the video and update its dimensions
+      const video = videos.find(v => v.id === resizingMedia.id);
+      if (video) {
+        video.width = newWidth;
+        if (newHeight) video.height = newHeight;
+      }
     }
   };
   
   const stopResizing = () => {
-    setResizingImage(null);
+    setResizingMedia(null);
     document.removeEventListener('mousemove', handleResizeMove);
     document.removeEventListener('mouseup', stopResizing);
   };
@@ -264,10 +362,13 @@ const BulletItem: React.FC<BulletItemProps> = ({
       document.removeEventListener('mousemove', handleResizeMove);
       document.removeEventListener('mouseup', stopResizing);
     };
-  }, [resizingImage]);
+  }, [resizingMedia]);
 
   // Filter images that belong to this bullet item
   const bulletImages = images.filter(img => img.id.startsWith(id + "-"));
+
+  // Filter videos that belong to this bullet item
+  const bulletVideos = videos.filter(vid => vid.id.startsWith(id + "-"));
 
   return (
     <div 
@@ -395,13 +496,14 @@ const BulletItem: React.FC<BulletItemProps> = ({
                   key={img.id} 
                   className={cn(
                     "relative group inline-block mb-2",
-                    resizingImage === img.id && "ring-2 ring-blue-500"
+                    resizingMedia?.id === img.id && resizingMedia?.type === 'image' && "ring-2 ring-blue-500"
                   )}
                   style={{
                     width: img.width || 200,
                     height: img.height || 'auto',
                     marginTop: img.top || 0,
-                    marginLeft: img.left || 0
+                    marginLeft: img.left || 0,
+                    position: 'relative',
                   }}
                 >
                   <img 
@@ -413,32 +515,141 @@ const BulletItem: React.FC<BulletItemProps> = ({
                       height: '100%',
                       objectFit: 'contain'
                     }}
-                    onClick={() => setPreviewImage(img.url)}
+                    onClick={() => setPreviewImage({url: img.url, id: img.id})}
                   />
+                  {/* Image controls overlay */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black bg-opacity-20 transition-opacity flex items-center justify-center rounded-md">
-                    {/* Image controls */}
-                    <div className="absolute top-2 right-2 flex gap-2">
+                    {/* Controls container - Top left */}
+                    <div className="absolute top-2 left-2 flex gap-2 z-20">
+                      {/* Delete button */}
+                      {onDeleteImage && (
+                        <button
+                          className="bg-white p-1.5 rounded-full shadow hover:bg-red-100 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (window.confirm('Are you sure you want to delete this image?')) {
+                              onDeleteImage(img.id, img.url);
+                            }
+                          }}
+                          title="Delete image"
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </button>
+                      )}
+                      
+                      {/* Position toggle button */}
                       <button
-                        className="bg-white p-1.5 rounded-full shadow hover:bg-gray-100 transition-colors"
-                        onClick={() => setPreviewImage(img.url)}
+                        className="bg-white/90 p-1.5 rounded-full hover:bg-gray-100 transition-colors shadow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          cycleImagePosition(img.id);
+                        }}
+                        title="Change position"
                       >
-                        <Maximize className="h-3.5 w-3.5 text-gray-700" />
-                      </button>
-                      <button
-                        className="bg-white p-1.5 rounded-full shadow hover:bg-gray-100 transition-colors"
-                        onClick={() => cycleImagePosition(img.id)}
-                      >
-                        <svg className="h-3.5 w-3.5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg className="h-4 w-4 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="3" y="3" width="18" height="18" rx="2" />
                           <path d={imagePosition === 'left' ? "M9 12h9M9 16h9" : imagePosition === 'right' ? "M6 12h9M6 16h9" : "M6 12h12M6 16h12"} />
                         </svg>
+                      </button>
+                      
+                      {/* Fullscreen button */}
+                      <button
+                        className="bg-white/90 p-1.5 rounded-full hover:bg-gray-100 transition-colors shadow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setPreviewImage({url: img.url, id: img.id});
+                        }}
+                        title="Maximize"
+                      >
+                        <Maximize className="h-4 w-4 text-gray-700" />
                       </button>
                     </div>
                     
                     {/* Resize handle */}
                     <div 
                       className="absolute bottom-0 right-0 w-5 h-5 bg-white border border-gray-300 rounded-tl cursor-se-resize flex items-center justify-center"
-                      onMouseDown={(e) => startResizing(img.id, e, img.width, img.height)}
+                      onMouseDown={(e) => startResizing(img.id, 'image', e, img.width, img.height)}
+                    >
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 7L1 1M7 1L1 7" stroke="#666" strokeWidth="1.5" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Display videos attached to this bullet */}
+          {bulletVideos.length > 0 && (
+            <div className="mt-3">
+              {bulletVideos.map((video) => (
+                <div 
+                  key={video.id} 
+                  className={cn(
+                    "relative group inline-block mb-2",
+                    resizingMedia?.id === video.id && resizingMedia?.type === 'video' && "ring-2 ring-blue-500"
+                  )}
+                  style={{
+                    width: video.width || 400,
+                    height: video.height || 'auto',
+                    marginTop: video.top || 0,
+                    marginLeft: video.left || 0,
+                  }}
+                >
+                  <video 
+                    src={video.url}
+                    className="max-w-full rounded-md border border-gray-200 shadow-sm cursor-pointer animate-fade-in hover:shadow-md transition-shadow"
+                    controls
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain'
+                    }}
+                    onClick={() => setPreviewVideo({url: video.url, id: video.id})}
+                  />
+                  {/* Video controls overlay */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black bg-opacity-20 transition-opacity flex items-center justify-center rounded-md">
+                    {/* Controls container - Top left */}
+                    <div className="absolute top-2 left-2 flex gap-2 z-20">
+                      {/* Delete button */}
+                      {onDeleteVideo && (
+                        <button
+                          className="bg-white p-1.5 rounded-full shadow hover:bg-red-100 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (window.confirm('Are you sure you want to delete this video?')) {
+                              onDeleteVideo(video.id, video.url);
+                            }
+                          }}
+                          title="Delete video"
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </button>
+                      )}
+                      
+                      {/* Fullscreen button */}
+                      <button
+                        className="bg-white/90 p-1.5 rounded-full hover:bg-gray-100 transition-colors shadow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setPreviewVideo({url: video.url, id: video.id});
+                        }}
+                        title="Maximize"
+                      >
+                        <Maximize className="h-4 w-4 text-gray-700" />
+                      </button>
+                    </div>
+                    
+                    {/* Resize handle */}
+                    <div 
+                      className="absolute bottom-0 right-0 w-5 h-5 bg-white border border-gray-300 rounded-tl cursor-se-resize flex items-center justify-center"
+                      onMouseDown={(e) => startResizing(video.id, 'video', e, video.width || 400, video.height)}
                     >
                       <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M7 7L1 1M7 1L1 7" stroke="#666" strokeWidth="1.5" />
@@ -471,6 +682,8 @@ const BulletItem: React.FC<BulletItemProps> = ({
                     images={images}
                     onImageResize={onImageResize}
                     onAddCollapsibleBullet={onAddCollapsibleBullet}
+                    onVideoUpload={onVideoUpload}
+                    videos={videos}
                   />
                 ))}
               </CollapsibleContent>
@@ -483,23 +696,96 @@ const BulletItem: React.FC<BulletItemProps> = ({
               <div className="relative flex items-center justify-center h-screen max-h-[90vh]">
                 {previewImage && (
                   <img 
-                    src={previewImage} 
+                    src={previewImage.url} 
                     alt="Preview"
                     className="max-w-full max-h-full object-contain"
                   />
                 )}
-                <button
-                  className="absolute top-4 right-4 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
-                  onClick={() => setPreviewImage(null)}
-                >
-                  <X className="h-6 w-6 text-white" />
-                </button>
+                <div className="absolute top-4 right-4 flex gap-2">
+                  {onDeleteImage && previewImage && (
+                    <button
+                      className="p-2 bg-red-600 bg-opacity-80 rounded-full hover:bg-opacity-100 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const img = images.find(img => img.id === previewImage.id);
+                        if (img && window.confirm('Are you sure you want to delete this image?')) {
+                          onDeleteImage(img.id, img.url);
+                          setPreviewImage(null);
+                        }
+                      }}
+                      title="Delete image"
+                    >
+                      <X className="h-6 w-6 text-white" />
+                    </button>
+                  )}
+                  <button
+                    className="p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
+                    onClick={() => setPreviewImage(null)}
+                    title="Close preview"
+                  >
+                    <X className="h-6 w-6 text-white" />
+                  </button>
+                </div>
                 <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm opacity-70">
                   Press ESC to close
                 </div>
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Video fullscreen dialog */}
+          <Dialog open={!!previewVideo} onOpenChange={(open) => !open && setPreviewVideo(null)}>
+            <DialogContent className="max-w-[90vw] p-0 bg-black bg-opacity-90 border-none overflow-hidden">
+              <div className="relative flex items-center justify-center h-screen max-h-[90vh]">
+                {previewVideo && (
+                  <video 
+                    src={previewVideo.url}
+                    controls
+                    className="max-w-full max-h-full"
+                    autoPlay
+                  />
+                )}
+                <div className="absolute top-4 right-4 flex gap-2">
+                  {onDeleteVideo && previewVideo && (
+                    <button
+                      className="p-2 bg-red-600 bg-opacity-80 rounded-full hover:bg-opacity-100 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const video = videos.find(vid => vid.id === previewVideo.id);
+                        if (video && window.confirm('Are you sure you want to delete this video?')) {
+                          onDeleteVideo(video.id, video.url);
+                          setPreviewVideo(null);
+                        }
+                      }}
+                      title="Delete video"
+                    >
+                      <X className="h-6 w-6 text-white" />
+                    </button>
+                  )}
+                  <button
+                    className="p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
+                    onClick={() => setPreviewVideo(null)}
+                    title="Close preview"
+                  >
+                    <X className="h-6 w-6 text-white" />
+                  </button>
+                </div>
+                <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm opacity-70">
+                  Press ESC to close
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Hidden video input */}
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={handleVideoFileInputChange}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       </div>
     </div>

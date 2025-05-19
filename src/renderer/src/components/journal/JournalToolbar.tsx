@@ -6,7 +6,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
-import { List, ListTree, Share, Loader2, Save, Share2, Download, FileText, Image } from "lucide-react";
+import { List, ListTree, Share, Loader2, Save, Share2, Download, FileText, Image, WifiOff, Video } from "lucide-react";
+import { useJournalSync } from "../../hooks/useJournalSync";
+import { toast } from "../../components/ui/use-toast";
 
 interface JournalToolbarProps {
   title: string;
@@ -24,6 +26,8 @@ interface JournalToolbarProps {
   onSave: () => void;
   lastSaved: Date | null;
   onImageUpload?: () => void;
+  onVideoUpload?: () => void;
+  journalData?: any;
 }
 
 const JournalToolbar: React.FC<JournalToolbarProps> = ({
@@ -42,7 +46,11 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
   onSave,
   lastSaved,
   onImageUpload,
+  onVideoUpload,
+  journalData
 }) => {
+  const { isOnline, isAuthenticated, lastSynced, pendingChanges, syncJournal } = useJournalSync();
+
   const handleImageUpload = async () => {
     try {
       const result = await window.electron.ipcRenderer.invoke('select-image');
@@ -54,20 +62,49 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
     }
   };
 
+  const handleVideoUpload = async () => {
+    try {
+      const result = await window.electron.ipcRenderer.invoke('select-video');
+      if (result && onVideoUpload) {
+        onVideoUpload();
+      }
+    } catch (error) {
+      console.error('Error uploading video:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    onSave();
+    await syncJournal(journalData);
+  };
+
+  const handlePublish = async () => {
+    if (!isOnline) {
+      toast({
+        title: 'Offline Mode',
+        description: 'You are currently offline. Changes will be saved locally and synced when you are back online.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!isAuthenticated) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please sign in to publish your journal.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (onPublish) {
+      onPublish();
+    }
+  };
+
   return (
     <div className="flex justify-between items-center">
-      <div>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className={`bg-transparent focus:outline-none border-b border-transparent focus:border-gray-300 p-1 ${
-            isFullscreen ? "text-2xl" : "text-xl"
-          } font-semibold animate-fade-in`}
-          placeholder="Journal Title"
-        />
-      </div>
-      <div className="flex gap-2 items-center fullscreen-toolbar-buttons">
+      <div className="flex gap-3 items-center flex-wrap fullscreen-toolbar-buttons">
         {onAddNewRootBullet && (
           <Button
             variant="outline"
@@ -102,11 +139,21 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
           <span>Upload Image</span>
         </Button>
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleVideoUpload}
+          className="flex items-center gap-1 hover:scale-105 transition-transform"
+        >
+          <Video className="h-4 w-4" />
+          <span>Upload Video</span>
+        </Button>
+
         {onPublish && (
           <Button
             variant={isPublished ? "outline" : "default"}
             size="sm"
-            onClick={onPublish}
+            onClick={handlePublish}
             disabled={isSaving || isPublished}
             className="flex items-center gap-1 hover:scale-105 transition-transform"
           >
@@ -120,9 +167,9 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
         )}
 
         <Button
-          onClick={onSave}
+          onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600 shadow-md hover:shadow-lg transition-all duration-200"
         >
           {isSaving ? (
             <>
@@ -137,23 +184,36 @@ const JournalToolbar: React.FC<JournalToolbarProps> = ({
           )}
         </Button>
 
+        {!isOnline && (
+          <div className="flex items-center gap-1 text-yellow-600">
+            <WifiOff className="h-4 w-4" />
+            <span className="text-sm">Offline</span>
+          </div>
+        )}
+
+        {pendingChanges && (
+          <span className="text-sm text-yellow-600">
+            Changes pending sync
+          </span>
+        )}
+
         {lastSaved && (
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-gray-500 mr-2">
             Last saved: {lastSaved.toLocaleTimeString()}
           </span>
         )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="hover:scale-105 transition-transform">
+            <Button variant="outline" size="sm" className="hover:scale-105 transition-transform border-gray-300 hover:bg-gray-100">
               Export
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="animate-fade-in">
-            <DropdownMenuItem onClick={onExport} className="hover:bg-gray-100">
+          <DropdownMenuContent align="end" className="animate-fade-in bg-white border border-gray-200 shadow-lg rounded-md p-1">
+            <DropdownMenuItem onClick={onExport} className="hover:bg-gray-100 cursor-pointer rounded-sm p-2">
               Export as JSON
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onExportOPML} className="hover:bg-gray-100">
+            <DropdownMenuItem onClick={onExportOPML} className="hover:bg-gray-100 cursor-pointer rounded-sm p-2">
               Export as OPML
             </DropdownMenuItem>
           </DropdownMenuContent>

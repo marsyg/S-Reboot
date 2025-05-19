@@ -66,8 +66,9 @@ const Journal: React.FC<JournalProps> = ({
   const {
     title,
     setTitle,
-    bullets: displayBullets,
+    bullets: displayBullets = [],
     images,
+    videos,
     isFullscreen,
     setIsFullscreen,
     isPublished,
@@ -81,6 +82,7 @@ const Journal: React.FC<JournalProps> = ({
     handleToggleCollapse,
     handleImageUpload,
     handleImageResize,
+    handleVideoUpload,
     addNewRootBullet,
     addCollapsibleBullet,
     exportToJson,
@@ -114,6 +116,7 @@ const Journal: React.FC<JournalProps> = ({
           setTitle={setTitle}
           bullets={displayBullets}
           images={images}
+          videos={videos}
           isFullscreen={isFullscreen}
           setIsFullscreen={setIsFullscreen}
           isPublished={isPublished}
@@ -126,6 +129,7 @@ const Journal: React.FC<JournalProps> = ({
           onAddBulletAfter={handleAddBulletAfter}
           onToggleCollapse={handleToggleCollapse}
           onImageUpload={handleImageUpload}
+          onVideoUpload={handleVideoUpload}
           onImageResize={handleImageResize}
           addNewRootBullet={addNewRootBullet}
           addCollapsibleBullet={addCollapsibleBullet}
@@ -145,6 +149,7 @@ const Journal: React.FC<JournalProps> = ({
           setTitle={setTitle}
           bullets={displayBullets}
           images={images}
+          videos={videos}
           setIsFullscreen={setIsFullscreen}
           isPublished={isPublished}
           isSaving={isSaving}
@@ -155,6 +160,7 @@ const Journal: React.FC<JournalProps> = ({
           onAddBulletAfter={handleAddBulletAfter}
           onToggleCollapse={handleToggleCollapse}
           onImageUpload={handleImageUpload}
+          onVideoUpload={handleVideoUpload}
           onImageResize={handleImageResize}
           onAddNewRootBullet={addNewRootBullet}
           onAddCollapsibleBullet={addCollapsibleBullet}

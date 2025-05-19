@@ -14,7 +14,7 @@ interface JournalFullscreenProps {
   onAddBulletAfter: (id: string) => void;
   onToggleCollapse: (id: string) => void;
   onImageUpload: (id: string, file: File) => void;
-  onImageResize: (imageId: string, width: number, height?: number) => void;
+  onImageResize: (imageId: string, width: number, height?: number, top?: number, left?: number) => void;
   onAddNewRootBullet: () => void;
   onAddCollapsibleBullet: () => void;
   images: JournalImage[];

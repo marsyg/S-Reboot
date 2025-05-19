@@ -1,19 +1,23 @@
 import React from "react";
 import BulletItem from "../../components/BulletItem";
 import { BulletItemProps } from "../../components/BulletItem";
-import { BulletItemType, JournalImage } from "../../types/journal";
+import { BulletItemType, JournalImage, JournalVideo } from "../../types/journal";
 import { Button } from "../../components/ui/button";
 import { List, ListTree } from "lucide-react";
 
 interface JournalContentProps {
   bullets: BulletItemType[];
+  images: JournalImage[];
+  videos: JournalVideo[];
   onUpdate: (id: string, content: string) => void;
   onAddChild: (parentId: string) => void;
   onDelete: (id: string) => void;
   onAddBulletAfter: (id: string) => void;
   onToggleCollapse: (id: string) => void;
-  images: JournalImage[];
   onImageUpload: (id: string, file: File) => void;
+  onVideoUpload: (id: string, file: File) => void;
+  onDeleteImage?: (imageId: string, imageUrl: string) => void;
+  onDeleteVideo?: (videoId: string, videoUrl: string) => void;
   onImageResize?: (id: string, width: number, height?: number, top?: number, left?: number) => void;
   onAddNewRootBullet?: () => void;
   onAddCollapsibleBullet?: (parentId?: string) => void;
@@ -21,13 +25,17 @@ interface JournalContentProps {
 
 const JournalContent: React.FC<JournalContentProps> = ({
   bullets,
+  images,
+  videos,
   onUpdate,
   onAddChild,
   onDelete,
   onAddBulletAfter,
   onToggleCollapse,
-  images,
   onImageUpload,
+  onVideoUpload,
+  onDeleteImage,
+  onDeleteVideo,
   onImageResize,
   onAddNewRootBullet,
   onAddCollapsibleBullet
@@ -46,7 +54,11 @@ const JournalContent: React.FC<JournalContentProps> = ({
       onAddBulletAfter,
       onToggleCollapse,
       onImageUpload,
+      onVideoUpload,
+      onDeleteImage,
+      onDeleteVideo,
       images,
+      videos,
       onImageResize,
       onAddCollapsibleBullet
     };
@@ -61,6 +73,10 @@ const JournalContent: React.FC<JournalContentProps> = ({
         <BulletItem
           key={bullet.id}
           {...bullet}
+          onVideoUpload={onVideoUpload}
+          onDeleteImage={onDeleteImage}
+          onDeleteVideo={onDeleteVideo}
+          videos={videos}
         />
       ))}
       

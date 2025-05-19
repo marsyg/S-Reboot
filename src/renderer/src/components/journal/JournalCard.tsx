@@ -4,7 +4,7 @@ import { Dialog, DialogTrigger } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
 import JournalContent from "./JournalContent";
 import JournalToolbar from "./JournalToolbar";
-import { BulletItemType, JournalImage } from "../../types/journal";
+import { BulletItemType, JournalImage, JournalVideo } from "../../types/journal";
 import { Loader2, Save, Share2 } from "lucide-react";
 
 interface JournalCardProps {
@@ -12,6 +12,7 @@ interface JournalCardProps {
   setTitle: (title: string) => void;
   bullets: BulletItemType[];
   images: JournalImage[];
+  videos: JournalVideo[];
   isFullscreen: boolean;
   setIsFullscreen: (isFullscreen: boolean) => void;
   isPublished: boolean;
@@ -24,7 +25,10 @@ interface JournalCardProps {
   onAddBulletAfter: (id: string) => void;
   onToggleCollapse: (id: string) => void;
   onImageUpload: (id: string, file: File) => void;
-  onImageResize: (imageId: string, width: number, height?: number) => void;
+  onVideoUpload: (id: string, file: File) => void;
+  onDeleteImage: (imageId: string, imageUrl: string) => Promise<void>;
+  onDeleteVideo: (videoId: string, videoUrl: string) => Promise<void>;
+  onImageResize: (imageId: string, width: number, height?: number, top?: number, left?: number) => void;
   addNewRootBullet: () => void;
   addCollapsibleBullet: () => void;
   exportToJson: () => void;
@@ -40,6 +44,7 @@ export const JournalCard: React.FC<JournalCardProps> = ({
   setTitle,
   bullets,
   images,
+  videos,
   isFullscreen,
   setIsFullscreen,
   isPublished,
@@ -52,6 +57,9 @@ export const JournalCard: React.FC<JournalCardProps> = ({
   onAddBulletAfter,
   onToggleCollapse,
   onImageUpload,
+  onVideoUpload,
+  onDeleteImage,
+  onDeleteVideo,
   onImageResize,
   addNewRootBullet,
   addCollapsibleBullet,
@@ -67,6 +75,7 @@ export const JournalCard: React.FC<JournalCardProps> = ({
     title, 
     bulletsCount: bullets.length, 
     imagesCount: images.length, 
+    videosCount: videos?.length || 0, 
     isFullscreen, 
     isPublished, 
     isSaving, 
@@ -97,6 +106,28 @@ export const JournalCard: React.FC<JournalCardProps> = ({
     }
   };
 
+  const handleVideoUpload = async () => {
+    try {
+      const result = await window.electron.ipcRenderer.invoke('select-video');
+      if (result) {
+        // Create a File object from the base64 data
+        const response = await fetch(result.base64);
+        const blob = await response.blob();
+        const file = new File([blob], 'video.mp4', { type: 'video/mp4' });
+        
+        // Find the currently focused bullet or use the first bullet
+        const focusedElement = document.activeElement;
+        const bulletId = focusedElement?.closest('[data-bullet-id]')?.getAttribute('data-bullet-id') || bullets[0]?.id;
+        
+        if (bulletId) {
+          onVideoUpload(bulletId, file);
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading video:', error);
+    }
+  };
+
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader className="flex-none">
@@ -123,6 +154,7 @@ export const JournalCard: React.FC<JournalCardProps> = ({
             onSave={onSave}
             lastSaved={lastSaved}
             onImageUpload={handleImageUpload}
+            onVideoUpload={handleVideoUpload}
           />
         </CardTitle>
       </CardHeader>
@@ -130,12 +162,16 @@ export const JournalCard: React.FC<JournalCardProps> = ({
         <JournalContent
           bullets={bullets}
           images={images}
+          videos={videos}
           onUpdate={onUpdate}
           onAddChild={onAddChild}
           onDelete={onDelete}
           onAddBulletAfter={onAddBulletAfter}
           onToggleCollapse={onToggleCollapse}
           onImageUpload={onImageUpload}
+          onVideoUpload={onVideoUpload}
+          onDeleteImage={onDeleteImage}
+          onDeleteVideo={onDeleteVideo}
           onImageResize={onImageResize}
           onAddNewRootBullet={addNewRootBullet}
           onAddCollapsibleBullet={addCollapsibleBullet}

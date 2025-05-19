@@ -12,17 +12,41 @@ let db = null;
 
 function initializeDatabase() {
   try {
-    // Ensure the directory exists
+    console.log('Initializing database at:', dbPath);
+    console.log('User data path:', userDataPath);
+
+    // Ensure the directory exists with proper permissions
     if (!fs.existsSync(userDataPath)) {
-      fs.mkdirSync(userDataPath, { recursive: true });
+      console.log('Creating user data directory:', userDataPath);
+      fs.mkdirSync(userDataPath, { 
+        recursive: true,
+        mode: 0o755 // Set proper permissions for Mac/Linux
+      });
     }
 
-    // Check if database file exists
+    // Check if database file exists and is accessible
     const dbExists = fs.existsSync(dbPath);
-    
-    // Initialize database
-    db = new Database(dbPath);
-    console.log('Database initialized at:', dbPath);
+    console.log('Database file exists:', dbExists);
+
+    if (dbExists) {
+      // Check if we can access the file
+      try {
+        fs.accessSync(dbPath, fs.constants.R_OK | fs.constants.W_OK);
+        console.log('Database file is accessible');
+      } catch (accessError) {
+        console.error('Database file exists but is not accessible:', accessError);
+        // Try to fix permissions
+        fs.chmodSync(dbPath, 0o644);
+        console.log('Fixed database file permissions');
+      }
+    }
+
+    // Initialize database with verbose mode for better debugging
+    db = new Database(dbPath, { 
+      verbose: console.log,
+      fileMustExist: false
+    });
+    console.log('Database connection established');
 
     // Create journals table if it doesn't exist
     db.exec(`
@@ -37,6 +61,10 @@ function initializeDatabase() {
     `);
     console.log('Journals table created or already exists');
 
+    // Verify database connection
+    const testQuery = db.prepare('SELECT 1').get();
+    console.log('Database connection test:', testQuery);
+
     return true;
   } catch (error) {
     console.error('Error initializing database:', error);
@@ -45,7 +73,9 @@ function initializeDatabase() {
       code: error.code,
       stack: error.stack,
       dbPath,
-      userDataPath
+      userDataPath,
+      platform: process.platform,
+      arch: process.arch
     });
     return false;
   }

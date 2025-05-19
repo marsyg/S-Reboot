@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '../hooks/use-toast';
 import { generateSampleJournal } from '../utils/journalUtils';
-import { BulletItemType, JournalImage } from '../types/journal';
+import { BulletItemType, JournalImage, JournalVideo } from '../types/journal';
 import { supabase } from '../integrations/supabase/client';
 import { journalService } from '../services/journalService';
 
@@ -11,6 +11,7 @@ export const useJournalState = (
   initialContent?: {
     bullets?: BulletItemType[];
     images?: JournalImage[];
+    videos?: JournalVideo[];
   },
   journalId?: string
 ) => {
@@ -18,6 +19,7 @@ export const useJournalState = (
   const [bullets, setBullets] = useState<BulletItemType[]>([]);
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<JournalImage[]>([]);
+  const [videos, setVideos] = useState<JournalVideo[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +34,7 @@ export const useJournalState = (
     setBullets([]);
     setCollapsedItems(new Set());
     setImages([]);
+    setVideos([]);
     setIsFullscreen(false);
     setIsPublished(false);
     setIsSaving(false);
@@ -79,6 +82,13 @@ export const useJournalState = (
         // If no images provided, initialize with an empty array
         setImages([]);
       }
+      if (initialContent.videos) {
+        console.log('Setting videos from initial content:', initialContent.videos);
+        setVideos(initialContent.videos);
+      } else {
+        // If no images provided, initialize with an empty array
+        setVideos([]);
+      }
     } else {
       // If no initial content, initialize with template
       console.log('No initial content, initializing with template');
@@ -88,6 +98,7 @@ export const useJournalState = (
       setBullets(templateBulletsDeepCopy);
       setCollapsedItems(new Set());
       setImages([]);
+      setVideos([]);
     }
   }, [initialContent]);
 
@@ -382,15 +393,161 @@ export const useJournalState = (
     }
   };
 
+  // Handle video upload for a specific bullet
+  const handleVideoUpload = async (bulletId: string, file: File) => {
+    try {
+      // Show loading toast
+      toast({
+        title: 'Uploading video...',
+        description: 'Please wait while we upload your video.',
+      });
+
+      // Get current user session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Authentication required');
+      }
+
+
+      // Generate a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${bulletId}-${uuidv4()}.${fileExt}`;
+      const filePath = `${session.user.id}/${fileName}`;
+
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('journal-videos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      // Get the public URL for the uploaded video
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('journal-videos').getPublicUrl(filePath);
+
+      // Add the video to our videos array
+      const videoId = `${bulletId}-${uuidv4()}`;
+      setVideos((prev) => [
+        ...prev,
+        {
+          id: videoId,
+          url: publicUrl,
+          width: 560, // Default width for videos (16:9 aspect ratio)
+          height: 315, // Default height for videos (16:9 aspect ratio)
+        },
+      ]);
+
+      toast({
+        title: 'Video uploaded',
+        description: 'Video has been added to your journal entry.',
+      });
+    } catch (error: any) {
+      console.error('Error uploading video:', error);
+      toast({
+        title: 'Upload failed',
+        description:
+          error.message || 'Failed to upload video. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Delete an image from the journal and storage
+  const deleteImage = async (imageId: string, imageUrl: string) => {
+    try {
+      // Remove from local state first for immediate UI update
+      setImages(prev => prev.filter(img => img.id !== imageId));
+      
+      // Try to delete from storage
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // Extract the file path from the URL
+          const url = new URL(imageUrl);
+          const pathParts = url.pathname.split('/');
+          const bucket = pathParts[2]; // 'journal-images' or 'journal-videos'
+          const filePath = pathParts.slice(3).join('/');
+          
+          await supabase.storage
+            .from(bucket)
+            .remove([filePath]);
+        }
+      } catch (storageError) {
+        console.error('Error deleting image from storage:', storageError);
+        // Continue even if storage deletion fails
+      }
+      
+      toast({
+        title: 'Image deleted',
+        description: 'The image has been removed from your journal.',
+      });
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast({
+        title: 'Failed to delete image',
+        description: 'There was an error removing the image.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Delete a video from the journal and storage
+  const deleteVideo = async (videoId: string, videoUrl: string) => {
+    try {
+      // Remove from local state first for immediate UI update
+      setVideos(prev => prev.filter(vid => vid.id !== videoId));
+      
+      // Try to delete from storage
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // Extract the file path from the URL
+          const url = new URL(videoUrl);
+          const pathParts = url.pathname.split('/');
+          const bucket = pathParts[2]; // 'journal-images' or 'journal-videos'
+          const filePath = pathParts.slice(3).join('/');
+          
+          await supabase.storage
+            .from(bucket)
+            .remove([filePath]);
+        }
+      } catch (storageError) {
+        console.error('Error deleting video from storage:', storageError);
+        // Continue even if storage deletion fails
+      }
+      
+      toast({
+        title: 'Video deleted',
+        description: 'The video has been removed from your journal.',
+      });
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      toast({
+        title: 'Failed to delete video',
+        description: 'There was an error removing the video.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Handle image resizing
   const handleImageResize = (
     imageId: string,
     width: number,
-    height?: number
+    height?: number,
+    top?: number,
+    left?: number
   ) => {
     setImages((prevImages) =>
       prevImages.map((img) =>
-        img.id === imageId ? { ...img, width, height } : img
+        img.id === imageId ? { ...img, width, height, top, left } : img
       )
     );
   };
@@ -538,6 +695,7 @@ export const useJournalState = (
       title,
       bullets: bullets.map(simplifyBullet),
       images: images,
+      videos: videos,
       timestamp: new Date().toISOString(),
     };
 
@@ -638,12 +796,25 @@ ${bullets.map(buildOutline).join('')}
         url: img.url,
         width: img.width,
         height: img.height,
+        top: img.top,
+        left: img.left,
       }));
       console.log('Processed images:', simpleImages);
+
+      const simpleVideos = videos.map((video) => ({
+        id: video.id,
+        url: video.url,
+        width: video.width,
+        height: video.height,
+        top: video.top,
+        left: video.left,
+      }));
+      console.log('Processed videos:', simpleVideos);
 
       const contentObject = {
         bullets: simpleBullets,
         images: simpleImages,
+        videos: simpleVideos,
       };
       console.log('Content object prepared:', contentObject);
 
@@ -720,11 +891,23 @@ ${bullets.map(buildOutline).join('')}
         url: img.url,
         width: img.width,
         height: img.height,
+        top: img.top,
+        left: img.left,
+      }));
+
+      const simpleVideos = videos.map((video) => ({
+        id: video.id,
+        url: video.url,
+        width: video.width,
+        height: video.height,
+        top: video.top,
+        left: video.left,
       }));
 
       const contentObject = {
         bullets: simpleBullets,
         images: simpleImages,
+        videos: simpleVideos,
       };
 
       const { error } = await supabase.from('journals').insert({
@@ -856,7 +1039,7 @@ ${bullets.map(buildOutline).join('')}
           description: 'Some journal content could not be loaded properly.',
           variant: 'destructive',
         });
-        content = { bullets: [], images: [] };
+        content = { bullets: [], images: [], videos: [] };
       }
 
       // Update bullets and their collapse state
@@ -912,6 +1095,15 @@ ${bullets.map(buildOutline).join('')}
         setImages([]);
       }
 
+      // Update videos
+      if (content.videos && Array.isArray(content.videos)) {
+        console.log('Setting videos:', content.videos);
+        setVideos(content.videos);
+      } else {
+        console.warn('No valid videos found in content');
+        setVideos([]);
+      }
+
       console.log('=== Journal Load Complete ===');
       toast({
         title: 'Journal loaded',
@@ -940,6 +1132,7 @@ ${bullets.map(buildOutline).join('')}
       title,
       bulletsCount: bullets.length,
       imagesCount: images.length,
+      videosCount: videos.length,
       collapsedItemsCount: collapsedItems.size,
       isFullscreen,
       isPublished,
@@ -947,28 +1140,132 @@ ${bullets.map(buildOutline).join('')}
       isLocalSaving,
       lastSaved
     });
-  }, [title, bullets, images, collapsedItems, isFullscreen, isPublished, isSaving, isLocalSaving, lastSaved]);
+  }, [title, bullets, images, videos, collapsedItems, isFullscreen, isPublished, isSaving, isLocalSaving, lastSaved]);
+
+  // Handle outdenting a bullet (Shift+Tab)
+  const handleOutdent = (id: string) => {
+    const findBulletAndParent = (
+      items: BulletItemType[],
+      targetId: string,
+      parent: BulletItemType | null = null
+    ): { bullet: BulletItemType | null; parent: BulletItemType | null } => {
+      for (const item of items) {
+        if (item.id === targetId) {
+          return { bullet: item, parent };
+        }
+        if (item.children.length > 0) {
+          const result = findBulletAndParent(item.children, targetId, item);
+          if (result.bullet) {
+            return result;
+          }
+        }
+      }
+      return { bullet: null, parent: null };
+    };
+
+    const removeBulletFromParent = (
+      items: BulletItemType[],
+      targetId: string
+    ): BulletItemType[] => {
+      return items.map(item => {
+        if (item.children.length > 0) {
+          return {
+            ...item,
+            children: removeBulletFromParent(item.children, targetId)
+          };
+        }
+        return item;
+      }).filter(item => item.id !== targetId);
+    };
+
+    setBullets(prevBullets => {
+      // Find the bullet to outdent and its parent
+      const { bullet, parent } = findBulletAndParent(prevBullets, id);
+      
+      // If no bullet found or it's already at root level, return unchanged
+      if (!bullet || !parent) {
+        return prevBullets;
+      }
+
+      // Create the outdented bullet with updated level
+      const outdentedBullet = {
+        ...bullet,
+        level: bullet.level - 1,
+        children: bullet.children.map(child => ({
+          ...child,
+          level: child.level - 1
+        }))
+      };
+
+      // Remove the bullet from its current parent
+      const withoutBullet = removeBulletFromParent(prevBullets, id);
+
+      // Find the parent's index in the array
+      const findParentIndex = (items: BulletItemType[]): number => {
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].id === parent.id) {
+            return i;
+          }
+          if (items[i].children.length > 0) {
+            const index = findParentIndex(items[i].children);
+            if (index !== -1) {
+              return index;
+            }
+          }
+        }
+        return -1;
+      };
+
+      // Insert the outdented bullet after its parent
+      const insertAfterParent = (items: BulletItemType[]): BulletItemType[] => {
+        const result: BulletItemType[] = [];
+        for (let i = 0; i < items.length; i++) {
+          result.push(items[i]);
+          if (items[i].id === parent.id) {
+            // Insert the outdented bullet after the parent
+            result.push(outdentedBullet);
+          } else if (items[i].children.length > 0) {
+            // Recursively process children
+            result[i] = {
+              ...items[i],
+              children: insertAfterParent(items[i].children)
+            };
+          }
+        }
+        return result;
+      };
+
+      return insertAfterParent(withoutBullet);
+    });
+  };
 
   return {
     title,
     setTitle,
     bullets: displayBullets,
     images,
+    videos,
     isFullscreen,
     setIsFullscreen,
     isPublished,
     isSaving,
     isLocalSaving,
     lastSaved,
+    currentJournalId,
+    collapsedItems,
     handleUpdateBullet,
     handleAddChild,
     handleDeleteBullet,
     handleAddBulletAfter,
     handleToggleCollapse,
     handleImageUpload,
+    handleVideoUpload,
     handleImageResize,
+    deleteImage,
+    deleteVideo,
     addNewRootBullet,
     addCollapsibleBullet,
+    handleOutdent,
     exportToJson,
     exportToOPML,
     saveJournalLocally,

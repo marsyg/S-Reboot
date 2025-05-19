@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../integrations/supabase/client";
@@ -315,14 +314,14 @@ const Posts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-4 md:p-8">
       <header className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Published Journals</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Published Journals</h1>
           <p className="text-gray-600">Read and comment on community journals</p>
         </div>
         <div className="flex gap-4">
-          <Button variant="outline" onClick={() => navigate('/app')}>
+          <Button variant="outline" onClick={() => navigate('/app')} className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700">
             Back to My Journals
           </Button>
           <Button variant="destructive" onClick={handleLogout}>
@@ -338,39 +337,52 @@ const Posts = () => {
             <Button onClick={() => navigate('/app')}>Create Your First Journal</Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {journals.map((journal) => (
-              <Card 
-                key={journal.id} 
-                className="hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
+              <div
+                key={journal.id}
+                className="group perspective"
                 onClick={() => setViewingJournal(journal)}
               >
-                <CardHeader>
-                  <CardTitle className="text-lg">{journal.title}</CardTitle>
-                  <div className="text-sm text-gray-500 flex items-center">
-                    <Avatar className="h-5 w-5 mr-1">
-                      <AvatarFallback>{journal.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
-                    <span>{journal.full_name || journal.username}</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="text-sm text-gray-500">
-                  <p>Published: {formatDate(journal.updated_at)}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="flex items-center">
-                      <Heart className="h-4 w-4 mr-1 text-red-400" />
-                      {journal.likes}
-                    </span>
-                    <span className="flex items-center">
-                      <MessageCircle className="h-4 w-4 mr-1 text-blue-400" />
-                      {journal.comments}
-                    </span>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="ghost" size="sm">Read Journal</Button>
-                </CardFooter>
-              </Card>
+                <Card 
+                  className="relative w-full h-full transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(10deg)_rotateX(5deg)] cursor-pointer bg-white/80 backdrop-blur-sm border border-gray-100 shadow-lg hover:shadow-xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <CardHeader className="relative">
+                    <CardTitle className="text-lg group-hover:text-indigo-600 transition-colors duration-300">{journal.title}</CardTitle>
+                    <div className="text-sm text-gray-500 flex items-center">
+                      <Avatar className="h-5 w-5 mr-1 ring-2 ring-white shadow-sm">
+                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                          {journal.full_name?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{journal.full_name || journal.username}</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="text-sm text-gray-500">
+                    <p className="group-hover:text-gray-700 transition-colors duration-300">Published: {formatDate(journal.updated_at)}</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="flex items-center group-hover:scale-110 transition-transform duration-300">
+                        <Heart className="h-4 w-4 mr-1 text-red-400 group-hover:text-red-500 transition-colors duration-300" />
+                        {journal.likes}
+                      </span>
+                      <span className="flex items-center group-hover:scale-110 transition-transform duration-300">
+                        <MessageCircle className="h-4 w-4 mr-1 text-blue-400 group-hover:text-blue-500 transition-colors duration-300" />
+                        {journal.comments}
+                      </span>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all duration-300"
+                    >
+                      Read Journal
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
             ))}
           </div>
         )}
@@ -382,11 +394,11 @@ const Posts = () => {
           <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
             <div className="fixed inset-0 z-50 flex flex-col items-center">
               <div className="container max-w-7xl h-full flex flex-col py-6">
-                <div className="relative bg-white rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-3rem)] overflow-hidden">
+                <div className="relative bg-white/95 backdrop-blur-sm rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-3rem)] overflow-hidden border border-gray-100">
                   {/* Header with controls */}
-                  <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+                  <div className="p-4 border-b bg-white/50 backdrop-blur-sm flex justify-between items-center">
                     <div>
-                      <h2 className="text-2xl font-semibold">{viewingJournal.title}</h2>
+                      <h2 className="text-2xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{viewingJournal.title}</h2>
                       <p className="text-sm text-gray-500">
                         By {viewingJournal.full_name || viewingJournal.username} · {formatDate(viewingJournal.created_at)}
                       </p>
@@ -395,12 +407,14 @@ const Posts = () => {
                       <Button 
                         variant="ghost" 
                         onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="hover:bg-indigo-50 hover:text-indigo-600"
                       >
                         {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
                       </Button>
                       <Button 
                         variant="outline" 
                         onClick={() => setViewingJournal(null)}
+                        className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
                       >
                         Close
                       </Button>
@@ -411,16 +425,16 @@ const Posts = () => {
                   <div className={`flex ${isFullscreen ? 'flex-col' : 'flex-row'} h-full overflow-hidden`}>
                     {/* Journal content */}
                     <div className={`${isFullscreen ? 'h-full' : 'w-3/5'} overflow-auto p-6`}>
-                      <div className="bg-journal-background p-6 rounded-lg shadow-sm min-h-[300px]">
+                      <div className="bg-white/80 backdrop-blur-sm p-6 rounded-lg shadow-sm min-h-[300px] border border-gray-100">
                         <JournalView content={viewingJournal.content} />
                       </div>
                     </div>
                     
                     {/* Comments area */}
-                    <div className={`${isFullscreen ? 'h-64' : 'w-2/5'} border-l overflow-auto`}>
+                    <div className={`${isFullscreen ? 'h-64' : 'w-2/5'} border-l overflow-auto bg-white/50 backdrop-blur-sm`}>
                       <div className="p-4">
-                        <h3 className="text-xl font-semibold mb-4 flex items-center">
-                          <MessageCircle className="h-5 w-5 mr-2" />
+                        <h3 className="text-xl font-semibold mb-4 flex items-center text-gray-800">
+                          <MessageCircle className="h-5 w-5 mr-2 text-indigo-500" />
                           Comments
                         </h3>
                         
@@ -431,12 +445,12 @@ const Posts = () => {
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
                             rows={3}
-                            className="resize-none mb-2"
+                            className="resize-none mb-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
                           />
                           <Button 
                             onClick={handlePostComment} 
                             disabled={!newComment.trim() || isCommenting}
-                            className="flex items-center"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow transition-all duration-200"
                           >
                             {isCommenting ? (
                               <>
@@ -453,14 +467,16 @@ const Posts = () => {
                             <p className="text-center text-gray-500 py-4">No comments yet. Be the first to comment!</p>
                           ) : (
                             comments.map((comment) => (
-                              <div key={comment.id} className="border-b pb-4">
+                              <div key={comment.id} className="border-b pb-4 hover:bg-white/50 transition-colors duration-200 rounded-lg p-2">
                                 <div className="flex justify-between items-start mb-2">
                                   <div className="flex items-center">
-                                    <Avatar className="h-8 w-8 mr-2">
-                                      <AvatarFallback>{(comment.full_name || comment.username)?.substring(0, 2) || 'U'}</AvatarFallback>
+                                    <Avatar className="h-8 w-8 mr-2 ring-2 ring-white shadow-sm">
+                                      <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                                        {(comment.full_name || comment.username)?.substring(0, 2) || 'U'}
+                                      </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <p className="font-medium">{comment.full_name || comment.username}</p>
+                                      <p className="font-medium text-gray-800">{comment.full_name || comment.username}</p>
                                       <p className="text-xs text-gray-500">{formatDate(comment.created_at)}</p>
                                     </div>
                                   </div>
@@ -470,7 +486,7 @@ const Posts = () => {
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleDeleteComment(comment.id)}
-                                      className="h-8 w-8 p-0"
+                                      className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-500 transition-colors duration-200"
                                     >
                                       <svg 
                                         xmlns="http://www.w3.org/2000/svg" 
@@ -482,7 +498,7 @@ const Posts = () => {
                                         strokeWidth="2" 
                                         strokeLinecap="round" 
                                         strokeLinejoin="round" 
-                                        className="text-gray-400 hover:text-red-500"
+                                        className="text-gray-400"
                                       >
                                         <path d="M3 6h18"></path>
                                         <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>

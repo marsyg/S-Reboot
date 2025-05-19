@@ -19,6 +19,15 @@ export interface JournalImage {
   isResizing?: boolean;
 }
 
+export interface JournalVideo {
+  id: string;
+  url: string;
+  width?: number;
+  height?: number;
+  top?: number;
+  left?: number;
+}
+
 export interface JournalProps {
   initialTitle?: string;
   initialContent?: {

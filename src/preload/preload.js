@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld(
         // whitelist channels
         const validChannels = [
           'select-image',
+          'select-video',
           'get-journal',
           'get-all-journals',
           'create-journal',

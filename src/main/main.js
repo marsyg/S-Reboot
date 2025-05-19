@@ -158,6 +158,35 @@ ipcMain.handle('select-image', async () => {
   }
 });
 
+ipcMain.handle('select-video', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Videos', extensions: ['mp4', 'webm', 'mov', 'avi', 'mkv'] }
+      ]
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const videoPath = result.filePaths[0];
+      // Read the video file
+      const videoBuffer = fs.readFileSync(videoPath);
+      // Convert to base64
+      const base64Video = videoBuffer.toString('base64');
+      // Get the file extension without the dot
+      const ext = path.extname(videoPath).slice(1);
+      return {
+        path: videoPath,
+        base64: `data:video/${ext};base64,${base64Video}`
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error selecting video:', error);
+    throw error;
+  }
+});
+
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
