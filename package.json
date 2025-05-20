@@ -1,16 +1,13 @@
 {
-  "name": "flowy-scribe-journal",
+  "name": "s-reeboot",
   "main": "./out/main/main.js",
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "electron-vite dev -w",
-    "build": "electron-vite build",
-    "preview": "electron-vite preview",
-    "rebuild": "electron-rebuild -f -w better-sqlite3",
-    "start": "electron-forge start",
-    "package": "electron-builder",
-    "make": "electron-forge make"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -44,7 +41,6 @@
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-query": "^5.56.2",
     "@vitejs/plugin-react": "^4.4.1",
-    "better-sqlite3": "^11.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -52,6 +48,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "electron-vite": "^3.1.0",
     "embla-carousel-react": "^8.3.0",
+    "framer-motion": "^12.12.1",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
@@ -72,14 +69,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.8.1",
-    "@electron-forge/maker-deb": "^7.8.1",
-    "@electron-forge/maker-rpm": "^7.8.1",
-    "@electron-forge/maker-squirrel": "^7.8.1",
-    "@electron-forge/maker-zip": "^7.8.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
-    "@electron-forge/plugin-fuses": "^7.8.1",
-    "@electron/fuses": "^1.8.0",
     "@eslint/js": "^9.9.0",
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.5.5",
@@ -87,28 +76,14 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
-    "electron": "^36.2.1",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",
-    "typescript": "^5.5.3",
+    "typescript": "^4.9.5",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.1",
-    "electron-builder": "^26.0.12"
-  },
-  "description": "Personalized Editor",
-  "author": "Maz",
-  "build": {
-    "productName": "S-REBBOt",
-    "files": [
-      "out/**/*"
-    ],
-    "directories": {
-      "buildResources": "resources",
-      "app": "out"
-    }
+    "vite": "^5.4.1"
   }
 }

@@ -1200,39 +1200,22 @@ ${bullets.map(buildOutline).join('')}
       // Remove the bullet from its current parent
       const withoutBullet = removeBulletFromParent(prevBullets, id);
 
-      // Find the parent's index in the array
-      const findParentIndex = (items: BulletItemType[]): number => {
-        for (let i = 0; i < items.length; i++) {
-          if (items[i].id === parent.id) {
-            return i;
-          }
-          if (items[i].children.length > 0) {
-            const index = findParentIndex(items[i].children);
-            if (index !== -1) {
-              return index;
-            }
-          }
-        }
-        return -1;
-      };
-
-      // Insert the outdented bullet after its parent
+      // Insert the outdented bullet after its parent in the parent's children array
       const insertAfterParent = (items: BulletItemType[]): BulletItemType[] => {
-        const result: BulletItemType[] = [];
-        for (let i = 0; i < items.length; i++) {
-          result.push(items[i]);
-          if (items[i].id === parent.id) {
+        return items.reduce<BulletItemType[]>((acc, item) => {
+          acc.push(item);
+          if (item.id === parent.id) {
             // Insert the outdented bullet after the parent
-            result.push(outdentedBullet);
-          } else if (items[i].children.length > 0) {
+            acc.push(outdentedBullet);
+          } else if (item.children.length > 0) {
             // Recursively process children
-            result[i] = {
-              ...items[i],
-              children: insertAfterParent(items[i].children)
+            acc[acc.length - 1] = {
+              ...item,
+              children: insertAfterParent(item.children)
             };
           }
-        }
-        return result;
+          return acc;
+        }, []);
       };
 
       return insertAfterParent(withoutBullet);

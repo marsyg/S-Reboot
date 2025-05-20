@@ -36,7 +36,7 @@ const Login = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate('/app');
+        navigate('/posts');
       }
     });
   }, [navigate]);
@@ -50,7 +50,7 @@ const Login = () => {
         // Handle login
         const data = await signInWithEmail(email, password);
         toast.success('Successfully logged in!');
-        navigate('/app');
+        navigate('/posts');
       } else {
         // Handle signup
         const data = await signUpWithEmail(email, password, name);
